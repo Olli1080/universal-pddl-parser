@@ -148,7 +148,7 @@ public:
 	}
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override {
-		s << value;
+		s << std::fixed << value;
 	}
 
 	double evaluate() { return value; }
