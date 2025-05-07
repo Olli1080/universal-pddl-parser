@@ -20,9 +20,13 @@ void checkEqual( T & prob, const std::string & file ) {
 
 	std::ostringstream ds;
 	ds << prob;
-	ASSERT_EQ( t, ds.str() );
-	std::ofstream of("ins.txt");
-	of<<ds.str();
+
+	std::string output = ds.str();
+
+	std::ofstream of(std::filesystem::path("./output") / std::filesystem::path(file).filename());
+	of << output;
+
+	ASSERT_EQ( t, output );
 }
 
 TEST(DomainTests, LogisticsTest)

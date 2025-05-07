@@ -75,14 +75,14 @@ public:
 		Filereader f( s );
 		name = f.parseName( "DOMAIN" );
 
-		if ( DOMAIN_DEBUG ) std::cout << name << "\n";
+		if constexpr ( DOMAIN_DEBUG ) std::cout << name << "\n";
 
 		for ( ; f.getChar() != ')'; f.next() ) {
 			f.assert_token( "(" );
 			f.assert_token( ":" );
 			std::string t = f.getToken();
 
-			if ( DOMAIN_DEBUG ) std::cout << t << "\n";
+			if constexpr ( DOMAIN_DEBUG ) std::cout << t << "\n";
 
 			if (!parseBlock(t, f)) {
 				f.tokenExit( t );
@@ -112,7 +112,7 @@ public:
 			f.assert_token( ":" );
 			std::string s = f.getToken();
 
-			if ( DOMAIN_DEBUG ) std::cout << "  " << s << "\n";
+			if constexpr ( DOMAIN_DEBUG ) std::cout << "  " << s << "\n";
 
 			if (!parseRequirement(s)) {
 				f.tokenExit( s );
@@ -188,8 +188,11 @@ public:
 
 		// Relate subtypes and supertypes
 		for ( unsigned i = 0; i < ts.size(); ++i ) {
-			if ( ts.types[i].size() )
-				getType( ts.types[i] )->insertSubtype( getType( ts[i] ) );
+			if (!ts.types[i].empty())
+			{
+				auto type = getType(ts[i]);
+				getType(ts.types[i])->insertSubtype(type);
+			}
 			else getType( ts[i] );
 		}
 
@@ -245,7 +248,7 @@ public:
 				Lifted * c = new Lifted( f.getToken() );
 				c->parse( f, types[0]->constants, *this );
 
-				if ( DOMAIN_DEBUG ) std::cout << "  " << c;
+				if constexpr ( DOMAIN_DEBUG ) std::cout << "  " << c;
 				preds.insert( c );
 			}
 		}
@@ -263,7 +266,7 @@ public:
 			Function * c = new Function( f.getToken() );
 			c->parse( f, types[0]->constants, *this );
 
-			if ( DOMAIN_DEBUG ) std::cout << "  " << c;
+			if constexpr ( DOMAIN_DEBUG ) std::cout << "  " << c;
 			funcs.insert( c );
 		}
 		++f.c;
@@ -279,7 +282,7 @@ public:
 		Action * a = new Action( f.getToken() );
 		a->parse( f, types[0]->constants, *this );
 
-		if ( DOMAIN_DEBUG ) std::cout << a << "\n";
+		if constexpr ( DOMAIN_DEBUG ) std::cout << a << "\n";
 		actions.insert( a );
 	}
 
@@ -293,7 +296,7 @@ public:
 		Derived * d = new Derived;
 		d->parse( f, types[0]->constants, *this );
 
-		if ( DOMAIN_DEBUG ) std::cout << d << "\n";
+		if constexpr ( DOMAIN_DEBUG ) std::cout << d << "\n";
 		derived.insert( d );
 	}
 
@@ -307,7 +310,7 @@ public:
 		Action * a = new TemporalAction( f.getToken() );
 		a->parse( f, types[0]->constants, *this );
 
-		if ( DOMAIN_DEBUG ) std::cout << a << "\n";
+		if constexpr ( DOMAIN_DEBUG ) std::cout << a << "\n";
 		actions.insert( a );
 	}
 
