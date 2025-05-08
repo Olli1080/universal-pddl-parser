@@ -9,39 +9,42 @@ class When : public Condition {
 
 public:
 
-	Condition *pars, *cond;
+	std::shared_ptr<Condition> pars, cond;
 
-	When()
-		: pars( 0 ), cond( 0 ) {}
+	When() = default;
 
-	When( const When * w, Domain & d )
-		: pars( 0 ), cond( 0 ) {
-		if ( w->pars ) pars = w->pars->copy( d );
-		if ( w->cond ) cond = w->cond->copy( d );
+	When(const When& w, Domain & d )
+	{
+		if (w.pars) 
+			pars = w.pars->copy(d);
+		if (w.cond) 
+			cond = w.cond->copy(d);
 	}
 
-	~When() {
-		if ( pars ) delete pars;
-		if ( cond ) delete cond;
-	}
+	~When() override = default;
 
-	void print( std::ostream & s ) const {
+	void print(std::ostream& s) const override
+	{
 		s << "WHEN:\n";
-		if ( pars ) pars->print( s );
-		if ( cond ) cond->print( s );
+		if (pars) 
+			pars->print(s);
+		if (cond) 
+			cond->print(s);
 	}
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
 
-	void addParams( int m, unsigned n ) {
+	void addParams( int m, unsigned n ) override
+	{
 		pars->addParams( m, n );
 		cond->addParams( m, n );
 	}
 
-	Condition * copy( Domain & d ) {
-		return new When( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<When>(*this, d);
 	}
 
 };

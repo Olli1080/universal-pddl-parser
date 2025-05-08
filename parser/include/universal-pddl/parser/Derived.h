@@ -9,34 +9,36 @@ class Derived : public Lifted {
 
 public:
 
-	Condition * cond;
-	Lifted * lifted;
+	std::shared_ptr<Condition> cond;
+	std::shared_ptr<Lifted> lifted;
 
-	Derived()
-		: Lifted(), cond( 0 ), lifted( 0 ) {}
+	Derived() = default;
 
-	Derived( const std::string s )
-		: Lifted( s ), cond( 0 ), lifted( 0 ) {}
+	Derived(const std::string& s)
+		: Lifted(s) {}
 
-	Derived( const Derived * z, Domain & d );
+	Derived(const Derived& z, Domain& d);
 
-	void print( std::ostream & stream ) const {
+	void print( std::ostream & stream ) const override
+	{
 		stream << "Derived ";
 		ParamCond::print( stream );
-		if ( cond ) cond->print( stream );
+		if (cond) cond->print( stream );
 	}
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
 	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
 
-	void addParams( int m, unsigned n ) {
-		for ( unsigned i = 0; i < params.size(); ++i )
-			if ( params[i] >= m ) params[i] += n;
+	void addParams( int m, unsigned n ) override
+	{
+		for (int& param : params)
+			if (param >= m ) param += n;
 	}
 
-	Condition * copy( Domain & d ) {
-		return new Derived( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Derived>(*this, d);
 	}
 
 };

@@ -16,7 +16,7 @@ void GroundFunc<int>::PDDLPrint( std::ostream & s, unsigned indent, const TokenS
 	tabindent( s, indent );
 	s << "( = ";
 	TypeGround::PDDLPrint( s, 0, ts, d );
-	s << " " << d.types[((Function *)lifted)->returnType]->object( value ) << " )";
+	s << " " << d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->object( value ) << " )";
 }
 
 template <>
@@ -38,10 +38,10 @@ void GroundFunc<int>::parse( Filereader & f, TokenStruct< std::string > & ts, Do
 	
 	f.next();
 	std::string s = f.getToken();
-	std::pair< bool, unsigned > p = d.types[((Function *)lifted)->returnType]->parseObject( s );
+	std::pair< bool, unsigned > p = d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->parseObject( s );
 	if ( p.first ) value = p.second;
 	else {
-		std::pair< bool, int > q = d.types[((Function *)lifted)->returnType]->parseConstant( s );
+		std::pair< bool, int > q = d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->parseConstant( s );
 		if ( q.first ) value = q.second;
 		else f.tokenExit( s );
 	}

@@ -14,7 +14,7 @@ void Not::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
 	f.next();
 	f.assert_token( "(" );
 
-	cond = dynamic_cast< Ground * >( d.createCondition( f ) );
+	cond = std::dynamic_pointer_cast<Ground>(d.createCondition(f));
 
 	if ( !cond ) {
 		f.tokenExit( f.getToken() );

@@ -66,52 +66,59 @@ void Action::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d 
 	parseConditions( f, astruct, d );
 }
 
-CondVec Action::precons() {
-	return getSubconditionsFromCondition( pre );
+std::vector<std::shared_ptr<Condition>> Action::precons()
+{
+	return getSubconditionsFromCondition(pre);
 }
 
-CondVec Action::effects() {
-	return getSubconditionsFromCondition( eff );
+std::vector<std::shared_ptr<Condition>> Action::effects()
+{
+	return getSubconditionsFromCondition(eff);
 }
 
-GroundVec Action::addEffects() {
-	return getGroundsFromCondition( eff, false );
+std::vector<std::shared_ptr<Ground>> Action::addEffects()
+{
+	return getGroundsFromCondition(eff, false);
 }
 
-GroundVec Action::deleteEffects() {
-	return getGroundsFromCondition( eff, true );
+std::vector<std::shared_ptr<Ground>> Action::deleteEffects()
+{
+	return getGroundsFromCondition(eff, true);
 }
 
-CondVec Action::getSubconditionsFromCondition( Condition * c ) {
-	And * a = dynamic_cast< And * >( c );
-	if ( a ) return a->conds;
+std::vector<std::shared_ptr<Condition>> Action::getSubconditionsFromCondition(const std::shared_ptr<Condition>& c)
+{
+	auto a = std::dynamic_pointer_cast<And>(c);
+	if (a) return a->conds;
 
-	CondVec subconds;
-	if ( c ) subconds.push_back( c );
+	std::vector<std::shared_ptr<Condition>> subconds;
+	if (c) subconds.emplace_back(c);
 	return subconds;
 }
 
-GroundVec Action::getGroundsFromCondition( Condition * c, bool neg ) {
-	GroundVec grounds;
-	And * a = dynamic_cast< And * >( c );
+std::vector<std::shared_ptr<Ground>> Action::getGroundsFromCondition(const std::shared_ptr<Condition>& c, bool neg ) {
+	std::vector<std::shared_ptr<Ground>> grounds;
+	auto a = std::dynamic_pointer_cast<And>(c);
 	for ( unsigned i = 0; a && i < a->conds.size(); ++i ) {
 		if ( neg ) {
-			Not * n = dynamic_cast< Not * >( a->conds[i] );
-			if ( n ) grounds.push_back( n->cond );
+			auto n = std::dynamic_pointer_cast<Not>(a->conds[i]);
+			if (n) grounds.emplace_back(n->cond);
 		}
 		else {
-			Ground * g = dynamic_cast< Ground * >( a->conds[i] );
-			if ( g ) grounds.push_back( g );
+			auto g = std::dynamic_pointer_cast<Ground>(a->conds[i]);
+			if (g) grounds.emplace_back(g);
 		}
 	}
 
-	if ( neg ) {
-		Not * n = dynamic_cast< Not * >( c );
-		if ( n ) grounds.push_back( n->cond );
+	if (neg) 
+	{
+		auto n = std::dynamic_pointer_cast<Not>(c);
+		if (n) grounds.emplace_back(n->cond);
 	}
-	else {
-		Ground * g = dynamic_cast< Ground * >( c );
-		if ( g ) grounds.push_back( g );
+	else 
+	{
+		auto g = std::dynamic_pointer_cast<Ground>(c);
+		if (g) grounds.emplace_back(g);
 	}
 
 	return grounds;

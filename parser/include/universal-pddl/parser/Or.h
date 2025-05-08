@@ -5,42 +5,41 @@
 
 namespace parser { namespace pddl {
 
-class Or : public Condition {
-
+class Or : public Condition
+{
 public:
-	Condition *first, *second;
+	std::shared_ptr<Condition> first, second;
 
-	Or()
-		: first( 0 ), second( 0 ) {}
+	Or() = default;
 
-	Or( const Or * o, Domain & d )
-		: first( 0 ), second( 0 ) {
-		if ( o->first ) first = o->first->copy( d );
-		if ( o->second ) second = o->second->copy( d );
+	Or(const Or& o, Domain& d)
+	{
+		if (o.first) first = o.first->copy(d);
+		if (o.second) second = o.second->copy(d);
 	}
 
-	~Or() {
-		if ( first ) delete first;
-		if ( second ) delete second;
-	}
+	~Or() override = default;
 
-	void print( std::ostream & s ) const {
+	void print(std::ostream& s) const override
+	{
 		s << "OR:\n";
-		if ( first ) first->print( s );
-		if ( second ) second->print( s );
+		if (first) first->print(s);
+		if (second) second->print(s);
 	}
 
-	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
+	void PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override;
 
-	void addParams( int m, unsigned n ) {
-		first->addParams( m, n );
-		second->addParams( m, n );
+	void addParams(int m, unsigned n) override
+	{
+		first->addParams(m, n);
+		second->addParams(m, n);
 	}
 
-	Condition * copy( Domain & d ) {
-		return new Or( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Or>(*this, d);
 	}
 };
 

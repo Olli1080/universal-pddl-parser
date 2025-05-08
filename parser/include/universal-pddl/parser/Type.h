@@ -7,82 +7,90 @@ namespace parser { namespace pddl {
 
 class Type;
 
-typedef std::vector< Type * > TypeVec;
+typedef std::vector<Type*> TypeVec;
 
-class Type {
-
+class Type
+{
 public:
 
 	std::string name;
-	TypeVec subtypes;
-	Type * supertype;
+	std::vector<std::weak_ptr<Type>> subtypes;
+	std::weak_ptr<Type> supertype;
 
 	TokenStruct< std::string > constants;
 	TokenStruct< std::string > objects;
 
-	Type()
-		: supertype( 0 ) {}
+	Type() = default;
 
-	Type( const std::string & s )
-		: name( s ), supertype( 0 ) {}
+	Type(std::string s)
+		: name(std::move(s)) {}
 
-	Type( const Type * t )
-		: name( t->name ), supertype( 0 ), constants( t->constants ), objects( t->objects ) {}
+	Type(const Type& t)
+		: name(t.name), constants(t.constants), objects(t.objects) {}
 
-	virtual ~Type() {
-	}
+	virtual ~Type() = default;
 
-	virtual std::string getName() const {
+	[[nodiscard]] virtual std::string getName() const
+	{
 		return name;
 	}
 
-	void insertSubtype( Type * t ) {
-		subtypes.push_back( t );
-		t->supertype = this;
+	/*void insertSubtype(const std::shared_ptr<Type>& t) {
+		subtypes.emplace_back(t);
+		t->supertype = this->shared_from_this();
+	}*/
+
+	void copySubtypes(Type& t, const TokenStruct<std::shared_ptr<Type>>& ts)
+	{
+		for (auto& subtype : t.subtypes)
+			subtypes.emplace_back(ts.get(subtype.lock()->name));
 	}
 
-	void copySubtypes( Type * t, const TokenStruct< Type * > & ts ) {
-		for ( unsigned i = 0; i < t->subtypes.size(); ++i )
-			subtypes.push_back( ts.get( t->subtypes[i]->name ) );
-	}
-
-	void print( std::ostream & stream ) const {
+	void print( std::ostream & stream ) const
+	{
 		stream << name;
-		if ( supertype ) stream << "[" << supertype->name << "]";
+		if (const auto lock = supertype.lock(); lock) 
+			stream << "[" << lock->name << "]";
 		stream << "\n";
 	}
 
-	virtual void PDDLPrint( std::ostream & s ) const {
+	virtual void PDDLPrint( std::ostream & s ) const
+	{
 		s << "\t" << name;
-		if ( supertype ) s << " - " << supertype->name;
+		if (const auto lock = supertype.lock(); lock) 
+			s << " - " << lock->name;
 		s << "\n";
 	}
 
-	std::pair< bool, int > parseConstant( const std::string & object ) {
+	std::pair<bool, int> parseConstant(const std::string& object)
+	{
 		int k = 0;
 
 		int i = constants.index( object );
 		if ( i < 0 ) k += constants.size();
 		else return std::make_pair( true, -1 - i );
 
-		for ( unsigned i = 0; i < subtypes.size(); ++i ) {
-			std::pair< bool, int > p = subtypes[i]->parseConstant( object );
-			if ( p.first ) return std::make_pair( true, - k + p.second );
+		for (auto& subtype : subtypes)
+		{
+			std::pair<bool, int> p = subtype.lock()->parseConstant(object);
+			if ( p.first ) return std::make_pair(true, - k + p.second);
 			else k += p.second;
 		}
 
 		return std::make_pair( false, k );
 	}
 
-	std::pair< bool, unsigned > parseObject( const std::string & object ) {
+	std::pair<bool, unsigned> parseObject(const std::string& object)
+	{
 		unsigned k = 0;
 
 		int i = objects.index( object );
-		if ( i < 0 ) k += objects.size();
+		if (i < 0) k += objects.size();
 		else return std::make_pair( true, i );
 
-		for ( unsigned i = 0; i < subtypes.size(); ++i ) {
-			std::pair< bool, unsigned > p = subtypes[i]->parseObject( object );
+		for (auto& subtype : subtypes)
+		{
+			std::pair<bool, unsigned> p = subtype.lock()->parseObject( object );
 			if ( p.first ) return std::make_pair( true, k + p.second );
 			else k += p.second;
 		}
@@ -90,7 +98,8 @@ public:
 		return std::make_pair( false, k );
 	}
 
-	std::pair< std::string, int > object( int index ) {
+	std::pair<std::string, int> object(int index)
+	{
 		if ( index < 0 ) {
 			if ( -index <= (int)constants.size() ) return std::make_pair( constants[-1 - index], 0 );
 			else index += constants.size();
@@ -100,38 +109,48 @@ public:
 			else index -= objects.size();
 		}
 
-		for ( unsigned i = 0; i < subtypes.size(); ++i ) {
-			std::pair< std::string, int > p = subtypes[i]->object( index );
-			if ( p.first.size() ) return p;
+		for (auto& subtype : subtypes)
+		{
+			std::pair<std::string, int> p = subtype.lock()->object( index );
+			if (!p.first.empty()) return p;
 			else index = p.second;
 		}
 
 		return std::make_pair( "", index );
 	}
 
-	unsigned noObjects() {
+	unsigned noObjects() const
+	{
 		unsigned total = objects.size() + constants.size();
-		for ( unsigned i = 0; i < subtypes.size(); ++i )
-			total += subtypes[i]->noObjects();
+		for (auto& subtype : subtypes)
+			total += subtype.lock()->noObjects();
 		return total;
 	}
 
-	unsigned noConstants() {
+	unsigned noConstants() const
+	{
 		unsigned total = constants.size();
-		for ( unsigned i = 0; i < subtypes.size(); ++i ) {
-			total += subtypes[i]->noConstants();
-		}
+		for (auto& subtype : subtypes)
+			total += subtype.lock()->noConstants();
 		return total;
 	}
 
-	virtual Type * copy() {
-		return new Type( this );
+	virtual std::shared_ptr<Type> copy()
+	{
+		return std::make_shared<Type>(*this);
 	}
 
 };
 
-inline std::ostream & operator<<( std::ostream & stream, const Type * t ) {
-	t->print( stream );
+static void connect_types(const std::shared_ptr<Type>& super, const std::shared_ptr<Type>& sub)
+{
+	super->subtypes.emplace_back(sub);
+	sub->supertype = super;
+}
+
+inline std::ostream & operator<<(std::ostream& stream, const Type& t)
+{
+	t.print(stream);
 	return stream;
 }
 

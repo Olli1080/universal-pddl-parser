@@ -4,7 +4,7 @@
 namespace parser { namespace pddl {
 
 void FunctionExpression::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const {
-	ParamCond * c = d.funcs[d.funcs.index( fun->name )];
+	std::shared_ptr<ParamCond> c = d.funcs[d.funcs.index( fun->name )];
 
 	s << "( " << fun->name;
 	IntVec v( c->params.size() );
@@ -16,7 +16,7 @@ void FunctionExpression::PDDLPrint( std::ostream & s, unsigned indent, const Tok
 }
 
 double FunctionExpression::evaluate( Instance & ins, const StringVec & par ) {
-	ParamCond * c = ins.d.funcs[ins.d.funcs.index( fun->name )];
+	std::shared_ptr<ParamCond> c = ins.d.funcs[ins.d.funcs.index( fun->name )];
 
 	IntVec v( c->params.size() );
 	for ( unsigned i = 0; i < v.size(); ++i ) {
@@ -31,11 +31,12 @@ double FunctionExpression::evaluate( Instance & ins, const StringVec & par ) {
 
 	for ( unsigned i = 0; i < ins.init.size(); ++i )
 		if ( ins.init[i]->name == c->name && ins.init[i]->params == v )
-			return ((GroundFunc<double> *)ins.init[i])->value;
+			return std::static_pointer_cast<GroundFunc<double>>(ins.init[i])->value;
 	return 1;
 }
 
-Expression * createExpression( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
+std::shared_ptr<Expression> createExpression(Filereader& f, TokenStruct<std::string>& ts, Domain& d)
+{
 	f.next();
 
 	if ( f.getChar() == '(' ) {
@@ -43,33 +44,33 @@ Expression * createExpression( Filereader & f, TokenStruct< std::string > & ts, 
 		f.next();
 		std::string s = f.getToken();
 		if ( s == "+" || s == "-" || s == "*" || s == "/" ) {
-			CompositeExpression * ce = new CompositeExpression( s );
+			auto ce = std::make_shared<CompositeExpression>(s);
 			ce->parse( f, ts, d );
 			return ce;
 		}
 		else {
 			f.c -= s.size();
-			Function * fun = d.funcs.get( f.getToken( d.funcs ) );
-			ParamCond * c = new Lifted( fun );
+			auto fun = d.funcs.get( f.getToken( d.funcs ) );
+			std::shared_ptr<ParamCond> c = std::make_shared<Lifted>(*fun);
 			for ( unsigned i = 0; i < fun->params.size(); ++i ) {
 				f.next();
 				c->params[i] = ts.index( f.getToken( ts ) );
 			}
 			f.next();
 			f.assert_token( ")" );
-			return new FunctionExpression( c );
+			return std::make_shared<FunctionExpression>(c);
 		}
 	}
 	else if ( f.getChar() == '?' ) {  // just support DURATION if starts with ?
 		f.assert_token( "?DURATION" );
-		return new DurationExpression();
+		return std::make_shared<DurationExpression>();
 	}
 	else {
 		double d;
 		std::string s = f.getToken();
 		std::istringstream is( s );
 		is >> d;
-		return new ValueExpression( d );
+		return std::make_shared<ValueExpression>(d);
 	}
 }
 

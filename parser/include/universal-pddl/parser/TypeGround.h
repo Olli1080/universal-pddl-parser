@@ -5,27 +5,27 @@
 
 namespace parser { namespace pddl {
 
-class TypeGround : public Ground {
-
+class TypeGround : public Ground
+{
 public:
 
 	TypeGround()
 		: Ground() {}
 
-	TypeGround( Lifted * l, const IntVec & p = IntVec() )
-		: Ground( l, p ) {}
+	TypeGround(const std::shared_ptr<Lifted>& l, const IntVec& p = IntVec())
+		: Ground(l, p) {}
 
 //	TypeGround( const TypeGround * tg )
 //		: Ground( tg ) {}
 
-	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
+	void PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const override;
 
-	void insert( Domain & d, const StringVec & v );
+	void insert(Domain& d, const StringVec& v );
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override;
 
 };
 
-typedef std::vector< TypeGround * > TypeGroundVec;
+typedef std::vector<TypeGround*> TypeGroundVec;
 
 } } // namespaces

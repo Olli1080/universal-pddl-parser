@@ -11,67 +11,79 @@ namespace parser { namespace pddl {
 
 class Domain;
 
-class ExpectedToken : public std::runtime_error {
+class ExpectedToken : public std::runtime_error
+{
 public:
 	ExpectedToken(const std::string& token) : std::runtime_error(token + " expected") {}
 };
 
-class UnknownToken : public std::runtime_error {
+class UnknownToken : public std::runtime_error
+{
 public:
 	UnknownToken(const std::string& token) : std::runtime_error(token +  " does not name a known token") {}
 };
 
-class UnexpectedEOF : public std::runtime_error {
+class UnexpectedEOF : public std::runtime_error
+{
 public:
 	UnexpectedEOF() : std::runtime_error("Unexpected EOF found") {}
 };
 
-class Filereader {
-
+class Filereader
+{
 public:
 
 	std::string s;      // current line of file
 	std::ifstream f;    // file input stream
 	unsigned r, c;      // current row and column of file
   
-	Filereader( const std::string & file ) : f( file.c_str() ), r( 1 ), c( 0 ) {
+	Filereader(const std::string& file)
+		: f(file.c_str()), r(1), c(0)
+	{
 		if (!f) throw std::runtime_error(std::string("Failed to open file '") + file + "'");
 		std::getline( f, s );
 		next();
 	}
 
-	~Filereader() {
+	~Filereader()
+	{
 		f.close();
 	}
 
 	// characters to be ignored
-	bool ignore( char c ) {
+	bool ignore(char c) const
+	{
 		return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\f';
 	}
 
 	// parenthesis
-	bool paren( char c ) {
+	bool paren(char c) const
+	{
 		return c == '(' || c == ')' || c == '{' || c == '}';
 	}
 
 	// current character
-	char getChar() {
+	char getChar() const
+	{
 		return s[c];
 	}
 
 	// print line and column
-	void printLine() {
+	void printLine() const
+	{
 		std::cout << "Line " << r << ", column " << c+1 << ": ";
 	}
 
-	void tokenExit( const std::string & t ) {
+	void tokenExit(const std::string& t)
+	{
 		c -= t.size();
 		printLine();
 		throw UnknownToken(t);
 	}
 
 	// get next non-ignored character
-	void next() {
+	void next()
+	{
 		for ( ; c < s.size() && ignore( s[c] ); ++c );
 		while ( c == s.size() || s[c] == ';' ) {
 			++r;
@@ -86,7 +98,8 @@ public:
 	}
 
 	// get token converted to uppercase
-	std::string getToken() {
+	std::string getToken()
+	{
 		std::ostringstream os;
 		while ( c < s.size() && !ignore( s[c] ) && !paren( s[c] ) && s[c] != ',' )
 			os << ( 97 <= s[c] && s[c] <= 122 ? (char)( s[c++] - 32 ) : s[c++] );
@@ -104,7 +117,8 @@ public:
 	}
 
 	// assert syntax
-	void assert_token( const std::string & t ) {
+	void assert_token(const std::string& t)
+	{
 		unsigned b = 0;
 		for ( unsigned k = 0; c + k < s.size() && k < t.size(); ++k )
 			b += s[c + k] == t[k] || 
@@ -118,7 +132,8 @@ public:
 	}
 
 	// parse the name of a domain or instance
-	std::string parseName( const std::string & u ) {
+	std::string parseName(const std::string& u)
+	{
 		std::string out;
 		std::string t[5] = { "(", "DEFINE", "(", u, ")" };
 		for ( unsigned i = 0; i < 5; ++i ) {
@@ -134,7 +149,8 @@ public:
 
 	// parse a typed list
 	// if check is true, checks that types exist
-	TokenStruct< std::string > parseTypedList( bool check, const TokenStruct< Type * > & ts = TokenStruct< Type * >(), const std::string & lt = "" ) {
+	TokenStruct< std::string > parseTypedList(bool check, const TokenStruct<std::shared_ptr<Type>>& ts = TokenStruct<std::shared_ptr<Type>>(), const std::string& lt = "")
+	{
 		unsigned k = 0;
 		TokenStruct< std::string > out;
 		for ( next(); getChar() != ')' && lt.find( getChar() ) == std::string::npos; next() ) {

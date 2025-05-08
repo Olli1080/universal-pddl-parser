@@ -5,43 +5,46 @@
 
 namespace parser { namespace pddl {
 
-class And : public Condition {
-
+class And : public Condition
+{
 public:
-	CondVec conds;
+
+	std::vector<std::shared_ptr<Condition>> conds;
 
 	And() = default;
 
-	And( const And * a, Domain & d ) {
-		for ( unsigned i = 0; i < a->conds.size(); ++i )
-			conds.push_back( a->conds[i]->copy( d ) );
+	And(const And& a, Domain & d )
+	{
+		for (auto& cond : a.conds)
+			conds.emplace_back(cond->copy( d ) );
 	}
 
-	~And() {
-		for ( unsigned i = 0; i < conds.size(); ++i )
-			delete conds[i];
-	}
+	~And() override = default;
 
-	void print( std::ostream & s ) const {
-		for ( unsigned i = 0; i < conds.size(); ++i )
-			conds[i]->print( s );
+	void print(std::ostream& s) const override
+	{
+		for (auto& cond : conds)
+			cond->print( s );
 	}
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
 
-	void add( Condition * cond ) {
-		conds.push_back( cond );
+	void add(const std::shared_ptr<Condition>& cond)
+	{
+		conds.emplace_back(cond);
 	}
 
-	void addParams( int m, unsigned n ) {
-		for ( unsigned i = 0; i < conds.size(); ++i )
-			conds[i]->addParams( m, n );
+	void addParams(int m, unsigned n) override
+	{
+		for (auto& cond : conds)
+			cond->addParams( m, n );
 	}
 
-	Condition * copy( Domain & d ) {
-		return new And( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<And>(*this, d);
 	}
 
 };

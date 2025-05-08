@@ -7,11 +7,11 @@
 
 namespace parser { namespace pddl {
 
-class Condition {
-
+class Condition
+{
 public:
 
-	virtual ~Condition() {}
+	virtual ~Condition() = default;
 
 	virtual void print( std::ostream & stream ) const = 0;
 
@@ -21,14 +21,15 @@ public:
 
 	virtual void addParams( int m, unsigned n ) = 0;
 
-	virtual Condition * copy( Domain & d ) = 0;
+	virtual std::shared_ptr<Condition> copy(Domain& d) = 0;
 };
 
-inline std::ostream & operator<<( std::ostream & stream, const Condition * c ) {
-	c->print( stream );
+inline std::ostream & operator<<( std::ostream & stream, const Condition& c )
+{
+	c.print(stream);
 	return stream;
 }
 
-typedef std::vector< Condition * > CondVec;
+typedef std::vector<Condition*> CondVec;
 
 } } // namespaces

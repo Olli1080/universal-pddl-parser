@@ -3,9 +3,9 @@
 
 namespace parser { namespace pddl {
 
-Derived::Derived( const Derived * z, Domain & d )
-	: Lifted( z ), cond( 0 ), lifted( d.preds.get( z->name ) ) {
-	if ( z->cond ) cond = z->cond->copy( d );
+Derived::Derived(const Derived& z, Domain& d )
+	: Lifted( z ), lifted( d.preds.get( z.name ) ) {
+	if (z.cond) cond = z.cond->copy(d);
 }
 
 void Derived::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const {
@@ -13,12 +13,13 @@ void Derived::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< s
 
 	TokenStruct< std::string > dstruct( ts );
 
-	for ( unsigned i = 0; i < params.size(); ++i ) {
+	for (int param : params)
+	{
 		std::stringstream ss;
-		ss << "?" << d.types[params[i]]->getName() << dstruct.size();
+		ss << "?" << d.types[param]->getName() << dstruct.size();
 		dstruct.insert( ss.str() );
 		s << " " << ss.str();
-		if ( d.typed ) s << " - " << d.types[params[i]]->name;
+		if ( d.typed ) s << " - " << d.types[param]->name;
 	}
 	s << " )\n";
 

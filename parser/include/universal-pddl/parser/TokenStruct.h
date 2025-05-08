@@ -31,7 +31,7 @@ public:
 	// represents the types of a typed list
 	StringVec types;
 
-	TokenStruct() {}
+	TokenStruct() = default;
 
 	TokenStruct( const TokenStruct & ts )
 		: tokens( ts.tokens ), tokenMap( ts.tokenMap ), types( ts.types ) {}
@@ -42,7 +42,7 @@ public:
 		types.insert( types.end(), ts.types.begin(), ts.types.end() );
 	}
 
-	unsigned size() const {
+	[[nodiscard]] unsigned size() const {
 		return tokens.size();
 	}
 
@@ -64,16 +64,16 @@ public:
 
 	unsigned insert( const T & t ) {
 		TokenMap::iterator i = tokenMap.insert( tokenMap.begin(), std::make_pair( getName( t ), size() ) );
-		tokens.push_back( t );
+		tokens.emplace_back( t );
 		return i->second;
 	}
 
-	int index( const std::string & s ) const {
+	[[nodiscard]] int index(const std::string & s ) const {
 		TokenMap::const_iterator i = tokenMap.find( s );
 		return i == tokenMap.end() ? -1 : i->second;
 	}
 
-	T get( const std::string & s ) const {
+	[[nodiscard]] T get(const std::string & s ) const {
 		return tokens[index( s )];
 	}
 

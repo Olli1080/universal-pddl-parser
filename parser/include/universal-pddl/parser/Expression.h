@@ -7,45 +7,47 @@ namespace parser { namespace pddl {
 
 class Instance;
 
-class Expression : public Condition {
-
+class Expression : public Condition
+{
 public:
 
-	virtual ~Expression() {}
-	virtual std::string info() const = 0;
+	~Expression() override = default;
+	[[nodiscard]] virtual std::string info() const = 0;
 	virtual double evaluate() = 0;
-	virtual double evaluate( Instance & ins, const StringVec & par ) = 0;
+	virtual double evaluate(Instance& ins, const StringVec& par) = 0;
 	virtual IntSet params() = 0;
 
 	// inherit
-	virtual void print( std::ostream & stream ) const {
+	void print(std::ostream& stream) const override
+	{
 		stream << info();
 	}
 
-	virtual void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {}
-	virtual void addParams( int m, unsigned n ) {}
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override {}
+	void addParams(int m, unsigned n) override {}
 };
 
-Expression * createExpression( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+std::shared_ptr<Expression> createExpression(Filereader& f, TokenStruct<std::string>& ts, Domain& d);
 
-class CompositeExpression : public Expression {
-
+class CompositeExpression : public Expression
+{
 public:
 
 	std::string op;
-	Expression * left;
-	Expression * right;
+	std::shared_ptr<Expression> left;
+	std::shared_ptr<Expression> right;
 
-	CompositeExpression( const std::string& c ) : op( c ) {}
+	CompositeExpression(std::string c) : op(std::move(c))
+	{}
 
-	CompositeExpression( const std::string& c, Expression * l, Expression * r ) : op( c ), left( l ), right( r ) {}
+	CompositeExpression(std::string c, std::shared_ptr<Expression> l, std::shared_ptr<Expression> r )
+	: op(std::move(c)), left(std::move(l)), right(std::move(r))
+	{}
 
-	~CompositeExpression() {
-		delete left;
-		delete right;
-	}
+	~CompositeExpression() override = default;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override
+	{
 		f.next();
 		left = createExpression( f, ts, d );
 		right = createExpression( f, ts, d );
@@ -53,7 +55,8 @@ public:
 		f.assert_token( ")" );
 	}
 
-	std::string info() const {
+	[[nodiscard]] std::string info() const override
+	{
 		std::ostringstream os;
 		os << "(" << op << " " << left->info() << " " << right->info() << ")";
 		return os.str();
@@ -78,41 +81,44 @@ public:
 		return res;
 	}
 
-	double evaluate() {
-		return compute( left->evaluate(), right->evaluate() );
+	double evaluate() override
+	{
+		return compute(left->evaluate(), right->evaluate());
 	}
 
-	double evaluate( Instance & ins, const StringVec & par ) {
-		return compute( left->evaluate( ins, par ), right->evaluate( ins, par ) );
+	double evaluate(Instance& ins, const StringVec& par) override
+	{
+		return compute(left->evaluate(ins, par), right->evaluate(ins, par));
 	}
 
-	IntSet params() {
+	IntSet params() override
+	{
 		IntSet lpars = left->params();
 		IntSet rpars = right->params();
-		lpars.insert( rpars.begin(), rpars.end() );
+		lpars.insert(rpars.begin(), rpars.end());
 		return lpars;
 	}
 
-	Condition * copy( Domain & d ) {
-		Expression * cleft = dynamic_cast< Expression * >( left->copy( d ) );
-		Expression * cright = dynamic_cast< Expression * >( right->copy( d ) );
-		return new CompositeExpression( op, cleft, cright );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		auto cleft = std::dynamic_pointer_cast<Expression>(left->copy(d));
+		auto cright = std::dynamic_pointer_cast<Expression>(right->copy(d));
+		return std::make_shared<CompositeExpression>(op, cleft, cright);
 	}
 };
 
-class FunctionExpression : public Expression {
-
+class FunctionExpression : public Expression
+{
 public:
 
-	ParamCond * fun;
+	std::shared_ptr<ParamCond> fun;
 
-	FunctionExpression( ParamCond * c ) : fun( c ) {}
+	FunctionExpression(const std::shared_ptr<ParamCond>& c) : fun(c) {}
 
-	~FunctionExpression() {
-		delete fun;
-	}
+	~FunctionExpression() override = default;
 
-	std::string info() const {
+	[[nodiscard]] std::string info() const override
+	{
 		std::ostringstream os;
 		os << "(" << fun->name << fun->params << ")";
 		return os.str();
@@ -120,76 +126,89 @@ public:
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	double evaluate() { return 1; }
+	double evaluate() override { return 1; }
 
-	double evaluate( Instance & ins, const StringVec & par );
+	double evaluate( Instance & ins, const StringVec & par ) override;
 
-	IntSet params() {
-		return IntSet( fun->params.begin(), fun->params.end() );
+	IntSet params() override
+	{
+		return {fun->params.begin(), fun->params.end()};
 	}
 
-	Condition * copy( Domain & d ) {
-		return new FunctionExpression( dynamic_cast< ParamCond * >( fun->copy( d ) ) );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		auto pc = std::dynamic_pointer_cast<ParamCond>(fun->copy(d));
+		return std::make_shared<FunctionExpression>(pc);
 	}
 };
 
-class ValueExpression : public Expression {
-
+class ValueExpression : public Expression
+{
 public:
 
 	double value;
 
-	ValueExpression( double v ) : value( v ) {}
+	ValueExpression(double v) : value(v) {}
 
-	std::string info() const {
+	[[nodiscard]] std::string info() const override
+	{
 		std::ostringstream os;
 		os << value;
 		return os.str();
 	}
 
-	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override {
+	void PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const override
+	{
 		s << value;
 	}
 
-	double evaluate() { return value; }
+	double evaluate() override { return value; }
 
-	double evaluate( Instance & ins, const StringVec & par ) {
+	double evaluate(Instance& ins, const StringVec& par) override
+	{
 		return value;
 	}
 
-	IntSet params() {
-		return IntSet();
+	IntSet params() override
+	{
+		return {};
 	}
 
-	Condition * copy( Domain & d ) {
-		return new ValueExpression( value );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<ValueExpression>(value);
 	}
 };
 
-class DurationExpression : public Expression {
-
+class DurationExpression : public Expression
+{
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override {
 		s << "?DURATION";
 	}
 
-	std::string info() const {
+	[[nodiscard]] std::string info() const override
+	{
 		return "?DURATION";
 	}
 
-	double evaluate() {
+	double evaluate() override
+	{
 		return -1;
 	}
 
-	double evaluate( Instance & ins, const StringVec & par ) {
+	double evaluate( Instance & ins, const StringVec & par ) override
+	{
 		return evaluate();
 	}
 
-	IntSet params() {
-		return IntSet();
+	IntSet params() override
+	{
+		return {};
 	}
 
-	Condition * copy( Domain & d ) {
-		return new DurationExpression();
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<DurationExpression>();
 	}
 };
 

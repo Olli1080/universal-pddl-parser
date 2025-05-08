@@ -14,7 +14,7 @@ public:
 	CondList condStack;
 
 	CondIter( Condition * c ) {
-		condStack.push_back( std::make_pair( c, 0 ) );
+		condStack.emplace_back(c, 0);
 		(*this)++;
 	}
 

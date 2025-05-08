@@ -5,26 +5,27 @@
 
 namespace parser { namespace pddl {
 
-class Lifted : public ParamCond {
-
+class Lifted : public ParamCond
+{
 public:
 
-	Lifted() {}
+	Lifted() = default;
 
-	Lifted( const std::string & s )
+	Lifted(const std::string& s)
 		: ParamCond( s ) {}
 
-	Lifted( const ParamCond * c )
+	Lifted(const ParamCond& c)
 		: ParamCond( c ) {}
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
 
-	void addParams( int m, unsigned n ) {}
+	void addParams( int m, unsigned n ) override {}
 
-	Condition * copy( Domain & d ) {
-		return new Lifted( this );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Lifted>(*this);
 	}
 
 };

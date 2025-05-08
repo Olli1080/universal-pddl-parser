@@ -5,36 +5,39 @@
 
 namespace parser { namespace pddl {
 
-class Action : public ParamCond {
-
+class Action : public ParamCond
+{
 public:
 
-	Condition *pre, *eff;
+	std::shared_ptr<Condition> pre, eff;
 
-	Action( const std::string & s )
-		: ParamCond( s ), pre( 0 ), eff( 0 ) {}
+	Action(const std::string& s)
+		: ParamCond(s) {}
 
-	Action( ParamCond * c )
-		: ParamCond( c ), pre( 0 ), eff( 0 ) {}
+	Action(ParamCond& c)
+		: ParamCond(c) {}
 
-	Action( const Action * a, Domain & d )
-		: ParamCond( a ), pre( 0 ), eff( 0 ) {
-		if ( a->pre ) pre = a->pre->copy( d );
-		if ( a->eff ) eff = a->eff->copy( d );
+	Action(const Action& a, Domain& d)
+		: ParamCond(a)
+	{
+		if (a.pre) 
+			pre = a.pre->copy(d);
+		if (a.eff) 
+			eff = a.eff->copy(d);
 	}
 
-	virtual ~Action() {
-		if ( pre ) delete pre;
-		if ( eff ) delete eff;
-	}
+	virtual ~Action() override = default;
 
-	void print( std::ostream & s ) const {
+	void print(std::ostream& s) const override
+	{
 		s << name << params << "\n";
 		s << "Pre: " << pre;
-		if ( eff ) s << "Eff: " << eff;
+		if (eff) 
+			s << "Eff: " << eff;
 	}
 
-	virtual double duration() {
+	virtual double duration()
+	{
 		return 1;
 	}
 
@@ -42,35 +45,36 @@ public:
 
 	void parseConditions( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
 
-	void addParams( int m, unsigned n ) {}
+	void addParams( int m, unsigned n ) override {}
 
 	void addParams( const IntVec & v ) {
-		if ( pre ) pre->addParams( params.size(), v.size() );
-		if ( eff ) eff->addParams( params.size(), v.size() );
-		params.insert( params.end(), v.begin(), v.end() );
+		if (pre) pre->addParams(params.size(), v.size());
+		if (eff) eff->addParams(params.size(), v.size());
+		params.insert(params.end(), v.begin(), v.end());
 	}
 
-	Condition * copy( Domain & d ) {
-		return new Action( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Action>( *this, d );
 	}
 
-	CondVec precons();
+	std::vector<std::shared_ptr<Condition>> precons();
 
-	CondVec effects();
+	std::vector<std::shared_ptr<Condition>> effects();
 
-	GroundVec addEffects();
+	std::vector<std::shared_ptr<Ground>> addEffects();
 
-	GroundVec deleteEffects();
+	std::vector<std::shared_ptr<Ground>> deleteEffects();
 
 protected:
 
-	CondVec getSubconditionsFromCondition( Condition * c );
+	std::vector<std::shared_ptr<Condition>> getSubconditionsFromCondition(const std::shared_ptr<Condition>& c);
 
-	GroundVec getGroundsFromCondition( Condition * c, bool neg );
+	std::vector<std::shared_ptr<Ground>> getGroundsFromCondition(const std::shared_ptr<Condition>& c, bool neg );
 };
 
-typedef std::vector< Action * > ActionVec;
+typedef std::vector<Action*> ActionVec;
 
 } } // namespaces

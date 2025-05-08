@@ -3,55 +3,60 @@
 
 namespace parser { namespace pddl {
 
-Expression * TemporalAction::parseDuration( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
-	return createExpression( f, ts, d );
+std::shared_ptr<Expression> TemporalAction::parseDuration(Filereader& f, TokenStruct<std::string>& ts, Domain& d)
+{
+	return createExpression(f, ts, d);
 }
 
-void TemporalAction::printCondition( std::ostream & s, const TokenStruct< std::string > & ts, const Domain & d,
-									 const std::string & t, And * a ) const {
-	for ( unsigned i = 0; a && i < a->conds.size(); ++i ) {
+void TemporalAction::printCondition(std::ostream& s, const TokenStruct<std::string>& ts, const Domain& d,
+									 const std::string& t, const And& a) const
+{
+	for (const auto& cond : a.conds)
+	{
 		s << "\t\t( " << t << " ";
-		a->conds[i]->PDDLPrint( s, 0, ts, d );
+		cond->PDDLPrint(s, 0, ts, d);
 		s << " )\n";
 	}
 }
 
-void TemporalAction::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const {
+void TemporalAction::PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const
+	{
 	s << "( :DURATIVE-ACTION " << name << "\n";
 
 	s << "  :PARAMETERS ";
 
-	TokenStruct< std::string > astruct;
+	TokenStruct<std::string> astruct;
 
-	printParams( 0, s, astruct, d );
+	printParams(0, s, astruct, d);
 
 	s << "  :DURATION ( = ?DURATION ";
-	if ( durationExpr ) durationExpr->PDDLPrint( s, 0, astruct, d );
+	if (durationExpr) durationExpr->PDDLPrint(s, 0, astruct, d);
 	else s << "1";
 	s << " )\n";
 
 	s << "  :CONDITION\n";
 	s << "\t( AND\n";
-	printCondition( s, astruct, d, "AT START", (And *)pre );
-	printCondition( s, astruct, d, "OVER ALL", pre_o );
-	printCondition( s, astruct, d, "AT END", pre_e );
+	if (pre) printCondition( s, astruct, d, "AT START", *std::static_pointer_cast<And>(pre));
+	if (pre_o) printCondition( s, astruct, d, "OVER ALL", *pre_o );
+	if (pre_e) printCondition( s, astruct, d, "AT END", *pre_e );
 	s << "\t)\n";
 
 	s << "  :EFFECT\n";
 	s << "\t( AND\n";
-	printCondition( s, astruct, d, "AT START", (And *)eff );
-	printCondition( s, astruct, d, "AT END", eff_e );
+	if (eff) printCondition( s, astruct, d, "AT START", *std::static_pointer_cast<And>(eff));
+	if (eff_e) printCondition( s, astruct, d, "AT END", *eff_e );
 	s << "\t)\n";
 
 	s << ")\n";
 }
 
-void TemporalAction::parseCondition( Filereader & f, TokenStruct< std::string > & ts, Domain & d, And * a ) {
+void TemporalAction::parseCondition(Filereader& f, TokenStruct<std::string>& ts, Domain& d, And& a)
+{
 	f.next();
-	f.assert_token( "(" );
-	Condition * c = d.createCondition( f );
+	f.assert_token("(");
+	auto c = d.createCondition(f);
 	c->parse( f, ts, d );
-	a->conds.push_back( c );
+	a.conds.emplace_back( c );
 }
 
 void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
@@ -75,9 +80,9 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 	f.assert_token( ":" );
 	std::string s = f.getToken();
 	if ( s == "CONDITION" ) {
-		pre = new And;
-		pre_o = new And;
-		pre_e = new And;
+		pre = std::make_shared<And>();
+		pre_o = std::make_shared<And>();
+		pre_e = std::make_shared<And>();
 		f.next();
 		f.assert_token( "(" );
 		if ( f.getChar() != ')' ) {
@@ -90,11 +95,11 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 					std::string t = f.getToken();
 
 					if ( s == "AT" && t == "START" )
-						parseCondition( f, astruct, d, (And *)pre );
+						parseCondition( f, astruct, d, *std::dynamic_pointer_cast<And>(pre));
 					else if ( s == "OVER" && t == "ALL" )
-						parseCondition( f, astruct, d, pre_o );
+						parseCondition( f, astruct, d, *pre_o);
 					else if ( s == "AT" && t == "END" )
-						parseCondition( f, astruct, d, pre_e );
+						parseCondition( f, astruct, d, *pre_e);
 					else f.tokenExit( s + " " + t );
 
 					f.next();
@@ -107,11 +112,11 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 				std::string t = f.getToken();
 
 				if ( s == "AT" && t == "START" )
-					parseCondition( f, astruct, d, (And *)pre );
+					parseCondition( f, astruct, d, *std::dynamic_pointer_cast<And>(pre));
 				else if ( s == "OVER" && t == "ALL" )
-					parseCondition( f, astruct, d, pre_o );
+					parseCondition( f, astruct, d, *pre_o );
 				else if ( s == "AT" && t == "END" )
-					parseCondition( f, astruct, d, pre_e );
+					parseCondition( f, astruct, d, *pre_e );
 				else f.tokenExit( s + " " + t );
 
 				f.next();
@@ -129,8 +134,8 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 	f.next();
 	f.assert_token( "(" );
 	if ( f.getChar() != ')' ) {
-		eff = new And;
-		eff_e = new And;
+		eff = std::make_shared<And>();
+		eff_e = std::make_shared<And>();
 
 		s = f.getToken();
 		if ( s == "AND" ) {
@@ -141,9 +146,9 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 				std::string t = f.getToken();
 
 				if ( s == "AT" && t == "START" )
-					parseCondition( f, astruct, d, (And *)eff );
+					parseCondition( f, astruct, d, *std::dynamic_pointer_cast<And>(eff));
 				else if ( s == "AT" && t == "END" )
-					parseCondition( f, astruct, d, eff_e );
+					parseCondition( f, astruct, d, *eff_e );
 				else f.tokenExit( s + " " + t );
 
 				f.next();
@@ -156,9 +161,9 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 			std::string t = f.getToken();
 
 			if ( s == "AT" && t == "START" )
-				parseCondition( f, astruct, d, (And *)eff );
+				parseCondition( f, astruct, d, *std::dynamic_pointer_cast<And>(eff));
 			else if ( s == "AT" && t == "END" )
-				parseCondition( f, astruct, d, eff_e );
+				parseCondition( f, astruct, d, *eff_e );
 			else f.tokenExit( s + " " + t );
 
 			f.next();
@@ -171,27 +176,33 @@ void TemporalAction::parse( Filereader & f, TokenStruct< std::string > & ts, Dom
 	f.assert_token( ")" );
 }
 
-GroundVec TemporalAction::preconsStart() {
+std::vector<std::shared_ptr<Ground>> TemporalAction::preconsStart()
+{
 	return getGroundsFromCondition( pre, false );
 }
 
-GroundVec TemporalAction::preconsOverall() {
+std::vector<std::shared_ptr<Ground>> TemporalAction::preconsOverall()
+{
 	return getGroundsFromCondition( pre_o, false );
 }
 
-GroundVec TemporalAction::preconsEnd() {
+std::vector<std::shared_ptr<Ground>> TemporalAction::preconsEnd()
+{
 	return getGroundsFromCondition( pre_e, false );
 }
 
-CondVec TemporalAction::endEffects() {
+std::vector<std::shared_ptr<Condition>> TemporalAction::endEffects()
+{
 	return getSubconditionsFromCondition( eff_e );
 }
 
-GroundVec TemporalAction::addEndEffects() {
+std::vector<std::shared_ptr<Ground>> TemporalAction::addEndEffects()
+{
 	return getGroundsFromCondition( eff_e, false );
 }
 
-GroundVec TemporalAction::deleteEndEffects() {
+std::vector<std::shared_ptr<Ground>> TemporalAction::deleteEndEffects()
+{
 	return getGroundsFromCondition( eff_e, true );
 }
 

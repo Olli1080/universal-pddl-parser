@@ -10,31 +10,34 @@ namespace parser { namespace pddl {
 // This is necessary for ADL
 using ::operator<<;
 
-class ParamCond : public Condition {
-
+class ParamCond : public Condition
+{
 public:
 	std::string name;
 	IntVec params;
 
-	ParamCond() {}
+	ParamCond() = default;
 
-	ParamCond( const std::string & s, const IntVec & p = IntVec() )
-		: name( s ), params( p ) {}
+	ParamCond(std::string s, IntVec p = IntVec())
+		: name(std::move(s)), params(std::move(p))
+	{}
 
-	ParamCond( const ParamCond * c )
-		: name( c->name ), params( c->params ) {}
+	ParamCond(const ParamCond& c)
+		: name(c.name), params(c.params) {}
 
-	std::string c_str() const {
+	[[nodiscard]] std::string c_str() const
+	{
 		return name;
 	}
 
-	void print( std::ostream & stream ) const {
+	void print(std::ostream& stream) const override
+	{
 		stream << name << params << "\n";
 	}
 
-	void printParams( unsigned first, std::ostream & s, TokenStruct< std::string > & ts, const Domain & d ) const;
+	void printParams(unsigned first, std::ostream& s, TokenStruct<std::string>& ts, const Domain& d) const;
 };
 
-typedef std::vector< ParamCond * > ParamCondVec;
+typedef std::vector<ParamCond*> ParamCondVec;
 
 } } // namespaces

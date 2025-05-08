@@ -7,17 +7,17 @@ void TypeGround::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct
 	tabindent( s, indent );
 	s << "( " << name;
 	for ( unsigned i = 0; i < params.size(); ++i )
-		s << " " << d.types[lifted->params[i]]->object( params[i] ).first;
+		s << " " << d.types[lifted.lock()->params[i]]->object( params[i] ).first;
 	s << " )";
 }
 
 void TypeGround::insert( Domain & d, const StringVec & v ) {
-	params.resize( lifted->params.size() );
-	for ( unsigned i = 0; i < lifted->params.size(); ++i ) {
-		std::pair< bool, unsigned > p = d.types[lifted->params[i]]->parseObject( v[i] );
+	params.resize( lifted.lock()->params.size() );
+	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i ) {
+		std::pair< bool, unsigned > p = d.types[lifted.lock()->params[i]]->parseObject( v[i] );
 		if ( p.first ) params[i] = p.second;
 		else {
-			std::pair< bool, int > q = d.types[lifted->params[i]]->parseConstant( v[i] );
+			std::pair< bool, int > q = d.types[lifted.lock()->params[i]]->parseConstant( v[i] );
 			if ( q.first ) params[i] = q.second;
 			else {
 				std::cerr << "Unknown object " << v[i] << "\n";
@@ -29,13 +29,13 @@ void TypeGround::insert( Domain & d, const StringVec & v ) {
 
 void TypeGround::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
 	f.next();
-	params.resize( lifted->params.size() );
-	for ( unsigned i = 0; i < lifted->params.size(); ++i, f.next() ) {
+	params.resize( lifted.lock()->params.size() );
+	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i, f.next() ) {
 		std::string s = f.getToken();
-		std::pair< bool, unsigned > p = d.types[lifted->params[i]]->parseObject( s );
+		std::pair< bool, unsigned > p = d.types[lifted.lock()->params[i]]->parseObject( s );
 		if ( p.first ) params[i] = p.second;
 		else {
-			std::pair< bool, int > q = d.types[lifted->params[i]]->parseConstant( s );
+			std::pair< bool, int > q = d.types[lifted.lock()->params[i]]->parseConstant( s );
 			if ( q.first ) params[i] = q.second;
 			else f.tokenExit( s );
 		}

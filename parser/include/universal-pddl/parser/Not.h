@@ -5,42 +5,42 @@
 
 namespace parser { namespace pddl {
 
-class Not : public Condition {
-
+class Not : public Condition
+{
 public:
 
-	Ground * cond;
+	std::shared_ptr<Ground> cond;
 
-	Not()
-		: cond( 0 ) {}
+	Not() = default;
 
-	Not( Ground * g )
-		: cond( g ) {}
+	Not(const std::shared_ptr<Ground>& g)
+		: cond(g) {}
 
-	Not( const Not * n, Domain & d )
-		: cond( 0 ) {
-		if ( n->cond ) cond = ( Ground * )n->cond->copy( d );
+	Not(const Not& n, Domain& d)
+	{
+		if (n.cond) cond = std::static_pointer_cast<Ground>(n.cond->copy(d));
 	}
 
-	~Not() {
-		if ( cond ) delete cond;
-	}
+	~Not() override = default;
 
-	void print( std::ostream & s ) const {
+	void print(std::ostream& s) const override
+	{
 		s << "NOT ";
-		if ( cond ) cond->print( s );
+		if (cond) cond->print(s);
 	}
 
-	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
+	void PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override;
 
-	void addParams( int m, unsigned n ) {
-		cond->addParams( m, n );
+	void addParams(int m, unsigned n) override
+	{
+		cond->addParams(m, n);
 	}
 
-	Condition * copy( Domain & d ) {
-		return new Not( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Not>(*this, d);
 	}
 
 };

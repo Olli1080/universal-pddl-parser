@@ -9,35 +9,36 @@ class Exists : public ParamCond {
 
 public:
 
-	Condition * cond;
+	std::shared_ptr<Condition> cond;
 
-	Exists()
-		: cond( 0 ) {}
+	Exists() = default;
 
-	Exists( const Exists * e, Domain & d )
-		: ParamCond( e ), cond( 0 ) {
-		if ( e->cond ) cond = e->cond->copy( d );
+	Exists(const Exists& e, Domain & d )
+		: ParamCond( e )
+	{
+		if (e.cond) cond = e.cond->copy(d);
 	}
 
-	~Exists() {
-		if ( cond ) delete cond;
-	}
+	~Exists() override = default;
 
-	void print( std::ostream & s ) const {
+	void print(std::ostream& s) const override
+	{
 		s << "Exists" << params << ":\n";
-		cond->print( s );
+		cond->print(s);
 	}
 
-	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
+	void PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override;
 
-	void addParams( int m, unsigned n ) {
+	void addParams(int m, unsigned n) override
+	{
 		cond->addParams( m, n );
 	}
 
-	Condition * copy( Domain & d ) {
-		return new Exists( this, d );
+	std::shared_ptr<Condition> copy(Domain& d) override
+	{
+		return std::make_shared<Exists>(*this, d);
 	}
 
 };

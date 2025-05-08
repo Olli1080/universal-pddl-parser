@@ -35,12 +35,12 @@ public:
 	bool fluents;                       // whether domains contains fluents
 	bool derivedpred;                   // whether domain contains derived predicates
 
-	TokenStruct< Type * > types;        // types
-	TokenStruct< Lifted * > preds;      // predicates
-	TokenStruct< Function * > funcs;    // functions
-	TokenStruct< Action * > actions;    // actions
-	TokenStruct< Derived * > derived;   // derived predicates
-	TokenStruct< Task * > tasks;        // tasks
+	TokenStruct<std::shared_ptr<Type>> types;        // types
+	TokenStruct<std::shared_ptr<Lifted>> preds;      // predicates
+	TokenStruct<std::shared_ptr<Function>> funcs;    // functions
+	TokenStruct<std::shared_ptr<Action>> actions;    // actions
+	TokenStruct<std::shared_ptr<Derived>> derived;   // derived predicates
+	TokenStruct<std::shared_ptr<Task>> tasks;        // tasks
 
 	Domain()
 		: equality( false ), strips( false ), adl( false ), condeffects( false )
@@ -48,7 +48,7 @@ public:
 		, nondet( false ), neg( false ), disj( false ), universal( false )
 		, fluents( false ), derivedpred( false )
 	{
-		types.insert( new Type( "OBJECT" ) ); // Type 0 is always "OBJECT", whether the domain is typed or not
+		types.insert(std::make_shared<Type>("OBJECT")); // Type 0 is always "OBJECT", whether the domain is typed or not
 	}
 
 	Domain( const std::string & s ) : Domain()
@@ -56,20 +56,7 @@ public:
 		parse( s );
 	}
 
-	virtual ~Domain() {
-		for ( unsigned i = 0; i < types.size(); ++i )
-			delete types[i];
-		for ( unsigned i = 0; i < preds.size(); ++i )
-			delete preds[i];
-		for ( unsigned i = 0; i < funcs.size(); ++i )
-			delete funcs[i];
-		for ( unsigned i = 0; i < actions.size(); ++i )
-			delete actions[i];
-		for ( unsigned i = 0; i < derived.size(); ++i )
-			delete derived[i];
-		for ( unsigned i = 0; i < tasks.size(); ++i )
-			delete tasks[i];
-	}
+	virtual ~Domain() = default;
 
 	virtual void parse( const std::string & s ) {
 		Filereader f( s );
@@ -143,32 +130,36 @@ public:
 	}
 
 	// get the type corresponding to a string
-	Type * getType( std::string s ) {
+	std::shared_ptr<Type> getType(const std::string& s)
+	{
 		int i = types.index( s );
 		if ( i < 0 ) {
 			if ( s[0] == '(' ) {
-				i = types.insert( new EitherType( s ) );
+				i = types.insert(std::make_shared<EitherType>(s));
 				for ( unsigned k = 9; s[k] != ')'; ) {
 					unsigned e = s.find( ' ', k );
-					types[i]->subtypes.push_back( getType( s.substr( k, e - k ) ) );
+					types[i]->subtypes.emplace_back(getType(s.substr(k, e - k )));
 					k = e + 1;
 				}
 			}
-			else i = types.insert( new Type( s ) );
+			else i = types.insert(std::make_shared<Type>(s));
 		}
 		return types[i];
 	}
 
 	// convert a vector of type names to integers
-	IntVec convertTypes( const StringVec & v ) {
+	IntVec convertTypes(const StringVec& v)
+	{
 		IntVec out;
-		for ( unsigned i = 0; i < v.size(); ++i )
-			out.push_back( types.index( getType( v[i] )->name ) );
+		for (const auto& i : v)
+			out.emplace_back(types.index(getType(i)->name));
 		return out;
 	}
 
-	void parseTypes( Filereader & f ) {
-		if ( !typed ) {
+	void parseTypes(Filereader& f)
+	{
+		if (!typed)
+		{
 			std::cout << "Requirement :TYPING needed to define types\n";
 			exit( 1 );
 		}
@@ -180,26 +171,30 @@ public:
 		TokenStruct< std::string > ts = f.parseTypedList( false );
 
 		// bit of a hack to avoid OBJECT being the supertype
-		if ( ts.index( "OBJECT" ) >= 0 ) {
+		if ( ts.index( "OBJECT" ) >= 0 ) 
+		{
 			types[0]->name = "SUPERTYPE";
 			types.tokenMap.clear();
 			types.tokenMap["SUPERTYPE"] = 0;
 		}
 
 		// Relate subtypes and supertypes
-		for ( unsigned i = 0; i < ts.size(); ++i ) {
+		for ( unsigned i = 0; i < ts.size(); ++i ) 
+		{
 			if (!ts.types[i].empty())
 			{
+				auto t1 = getType(ts.types[i]);
 				auto type = getType(ts[i]);
-				getType(ts.types[i])->insertSubtype(type);
+				connect_types(t1, type);
+				//t1->insertSubtype(type);
 			}
 			else getType( ts[i] );
 		}
 
 		// By default, the supertype of a type is "OBJECT"
-		for ( unsigned i = 1; i < types.size(); ++i )
-			if ( types[i]->supertype == 0 )
-				types[0]->insertSubtype( types[i] );
+		for (unsigned i = 1; i < types.size(); ++i)
+			if (!types[i]->supertype.lock())
+				connect_types(types[0], types[i]);
 
 		for ( unsigned i = 0; DOMAIN_DEBUG && i < types.size(); ++i )
 			std::cout << "  " << types[i];
@@ -227,13 +222,16 @@ public:
 		}
 	}
 
-	void parsePredicates( Filereader & f ) {
-		if ( typed && !types.size() ) {
+	void parsePredicates(Filereader& f)
+	{
+		if (typed && !types.size()) 
+		{
 			std::cout << "Types needed before defining predicates\n";
 			exit(1);
 		}
 
-		for ( f.next(); f.getChar() != ')'; f.next() ) {
+		for ( f.next(); f.getChar() != ')'; f.next() ) 
+		{
 			f.assert_token( "(" );
 			if ( f.getChar() == ':' ) {
 				// Needed to support MA-PDDL
@@ -245,17 +243,18 @@ public:
 				parsePredicates( f );
 			}
 			else {
-				Lifted * c = new Lifted( f.getToken() );
-				c->parse( f, types[0]->constants, *this );
+				auto c = std::make_shared<Lifted>(f.getToken());
+				c->parse(f, types[0]->constants, *this);
 
 				if constexpr ( DOMAIN_DEBUG ) std::cout << "  " << c;
-				preds.insert( c );
+				preds.insert(c);
 			}
 		}
 		++f.c;
 	}
 
-	void parseFunctions( Filereader & f ) {
+	void parseFunctions(Filereader& f)
+	{
 		if ( typed && !types.size() ) {
 			std::cout << "Types needed before defining functions\n";
 			exit(1);
@@ -263,7 +262,7 @@ public:
 
 		for ( f.next(); f.getChar() != ')'; f.next() ) {
 			f.assert_token( "(" );
-			Function * c = new Function( f.getToken() );
+			auto c = std::make_shared<Function>(f.getToken());
 			c->parse( f, types[0]->constants, *this );
 
 			if constexpr ( DOMAIN_DEBUG ) std::cout << "  " << c;
@@ -279,35 +278,39 @@ public:
 		}
 
 		f.next();
-		Action * a = new Action( f.getToken() );
+		auto a = std::make_shared<Action>(f.getToken());
 		a->parse( f, types[0]->constants, *this );
 
 		if constexpr ( DOMAIN_DEBUG ) std::cout << a << "\n";
 		actions.insert( a );
 	}
 
-	void parseDerived( Filereader & f ) {
-		if ( !preds.size() ) {
+	void parseDerived( Filereader & f )
+	{
+		if ( !preds.size() ) 
+		{
 			std::cout << "Predicates needed before defining derived predicates\n";
 			exit(1);
 		}
 
 		f.next();
-		Derived * d = new Derived;
+		auto d = std::make_shared<Derived>();
 		d->parse( f, types[0]->constants, *this );
 
 		if constexpr ( DOMAIN_DEBUG ) std::cout << d << "\n";
 		derived.insert( d );
 	}
 
-	void parseDurativeAction( Filereader & f ) {
-		if ( !preds.size() ) {
+	void parseDurativeAction( Filereader & f )
+	{
+		if ( !preds.size() ) 
+		{
 			std::cout << "Predicates needed before defining actions\n";
 			exit(1);
 		}
 
 		f.next();
-		Action * a = new TemporalAction( f.getToken() );
+		auto a = std::make_shared<TemporalAction>(f.getToken());
 		a->parse( f, types[0]->constants, *this );
 
 		if constexpr ( DOMAIN_DEBUG ) std::cout << a << "\n";
@@ -317,160 +320,175 @@ public:
 
 	// Return a copy of the type structure, with newly allocated types
 	// This will also copy all constants and objects!
-	TokenStruct< Type * > copyTypes() {
-		TokenStruct< Type * > out;
+	TokenStruct<std::shared_ptr<Type>> copyTypes()
+	{
+		TokenStruct<std::shared_ptr<Type>> out;
 		for ( unsigned i = 0; i < types.size(); ++i )
 			out.insert( types[i]->copy() );
 
 		for ( unsigned i = 1; i < types.size(); ++i ) {
-			if ( types[i]->supertype )
-				out[out.index( types[i]->supertype->name )]->insertSubtype( out[i] );
+			if (auto lock = types[i]->supertype.lock(); lock)
+				connect_types(out[out.index(lock->name)], out[i]);
 			else
-				out[i]->copySubtypes( types[i], out );
+				out[i]->copySubtypes( *types[i], out );
 		}
 
 		return out;
 	}
 
 	// Set the types to "otherTypes"
-	void setTypes( const TokenStruct< Type * > & otherTypes ) {
-		for ( unsigned i = 0; i < types.size(); ++i )
-			delete types[i];
+	void setTypes( const TokenStruct<std::shared_ptr<Type>> & otherTypes )
+	{
 		types = otherTypes;
 	}
 
 	// Create a type with a given supertype (default is "OBJECT")
-	void createType( const std::string & name, const std::string & parent = "OBJECT" ) {
-		Type * type = new Type( name );
+	void createType(const std::string& name, const std::string& parent = "OBJECT")
+	{
+		auto type = std::make_shared<Type>(name);
 		types.insert( type );
-		types.get( parent )->insertSubtype( type );
+		connect_types(types.get(parent), type);
 	}
 
 	// Create a constant of a given type
-	void createConstant( const std::string & name, const std::string & type ) {
+	void createConstant( const std::string & name, const std::string & type )
+	{
 		types.get( type )->constants.insert( name );
 	}
 
 	// Create a predicate with the given name and parameter types
-	Lifted * createPredicate( const std::string & name, const StringVec & params = StringVec() ) {
-		Lifted * pred = new Lifted( name );
-		for ( unsigned i = 0; i < params.size(); ++i )
-			pred->params.push_back( types.index( params[i] ) );
+	std::shared_ptr<Lifted> createPredicate(const std::string& name, const StringVec& params = StringVec())
+	{
+		auto pred = std::make_shared<Lifted>(name);
+		for (const auto& param : params)
+			pred->params.push_back( types.index(param) );
 		preds.insert( pred );
 		return pred;
 	}
 
 	// Create a function with the given name and parameter types
-	Lifted * createFunction( const std::string & name, int type, const StringVec & params = StringVec() ) {
-		Function * func = new Function( name, type );
-		for ( unsigned i = 0; i < params.size(); ++i )
-			func->params.push_back( types.index( params[i] ) );
+	std::shared_ptr<Lifted> createFunction( const std::string & name, int type, const StringVec & params = StringVec() )
+	{
+		auto func = std::make_shared<Function>(name, type);
+		for (const auto& param : params)
+			func->params.push_back( types.index(param) );
 		funcs.insert( func );
 		return func;
 	}
 
 	// Create an action with the given name and parameter types
-	Action * createAction( const std::string & name, const StringVec & params = StringVec() ) {
-		Action * action = new Action( name );
-		for ( unsigned i = 0; i < params.size(); ++i )
-			action->params.push_back( types.index( params[i] ) );
-		action->pre = new And;
-		action->eff = new And;
+	std::shared_ptr<Action> createAction( const std::string & name, const StringVec & params = StringVec() ) {
+		auto action = std::make_shared<Action>(name);
+		for (const auto& param : params)
+			action->params.push_back( types.index(param) );
+		action->pre = std::make_shared<And>();
+		action->eff = std::make_shared<And>();
 		actions.insert( action );
 		return action;
 	}
 
 	// Set the precondition of an action to "cond", converting to "And"
-	void setPre( const std::string & act, Condition * cond ) {
-		Action * action = actions.get( act );
+	void setPre(const std::string& act, const std::shared_ptr<Condition>& cond) 
+	{
+		auto action = actions.get(act);
 
-		And * old = dynamic_cast< And * >( cond );
-		if ( old == 0 ) {
-			action->pre = new And;
-			if ( cond ) dynamic_cast< And * >( action->pre )->add( cond->copy( *this ) );
+		auto old = std::dynamic_pointer_cast<And>(cond);
+		if (!old) 
+		{
+			action->pre = std::make_shared<And>();
+			if (cond) std::dynamic_pointer_cast<And>(action->pre)->add( cond->copy( *this ) );
 		}
 		else action->pre = old->copy( *this );
 	}
 
 	// Add a precondition to the action with name "act"
 	void addPre( bool neg, const std::string & act, const std::string & pred, const IntVec & params = IntVec() ) {
-		Action * action = actions.get( act );
-		if ( action->pre == 0 ) action->pre = new And;
-		And * a = dynamic_cast< And * >( action->pre );
-		if ( neg ) a->add( new Not( ground( pred, params ) ) );
+		auto action = actions.get( act );
+		if (!action->pre) action->pre = std::make_shared<And>();
+		auto a = std::dynamic_pointer_cast<And>(action->pre);
+		if ( neg ) a->add( std::make_shared<Not>( ground( pred, params ) ) );
 		else a->add( ground( pred, params ) );
 	}
 
 	// Add an "OR" precondition to the action with name "act"
 	void addOrPre( const std::string & act, const std::string & pred1, const std::string & pred2,
-				   const IntVec & params1 = IntVec(), const IntVec & params2 = IntVec() ) {
-		Or * o = new Or;
+				   const IntVec & params1 = IntVec(), const IntVec & params2 = IntVec() )
+	{
+		auto o = std::make_shared<Or>();
 		o->first = ground( pred1, params1 );
 		o->second = ground( pred2, params2 );
-		Action * action = actions.get( act );
-		And * a = dynamic_cast< And * >( action->pre );
-		a->add( o );
+		auto action = actions.get( act );
+		auto a = std::dynamic_pointer_cast<And>(action->pre);
+		a->add(o);
 	}
 
 	// Set the precondition of an action to "cond", converting to "And"
-	void setEff( const std::string & act, Condition * cond ) {
-		Action * action = actions.get( act );
+	void setEff( const std::string & act, const std::shared_ptr<Condition>& cond )
+	{
+		auto action = actions.get( act );
 
-		And * old = dynamic_cast< And * >( cond );
-		if ( old == 0 ) {
-			action->eff = new And;
-			if ( cond ) dynamic_cast< And * >( action->eff )->add( cond->copy( *this ) );
+		auto old = std::dynamic_pointer_cast<And>(cond);
+		if (!old) 
+		{
+			action->eff = std::make_shared<And>();
+			if ( cond ) std::dynamic_pointer_cast<And>(action->eff)->add( cond->copy( *this ) );
 		}
 		else action->eff = old->copy( *this );
 	}
 
 	// Add an effect to the action with name "act"
-	void addEff( bool neg, const std::string & act, const std::string & pred, const IntVec & params = IntVec() ) {
-		Action * action = actions.get( act );
-		if ( action->eff == 0 ) action->eff = new And;
-		And * a = dynamic_cast< And * >( action->eff );
-		if ( neg ) a->add( new Not( ground( pred, params ) ) );
+	void addEff( bool neg, const std::string & act, const std::string & pred, const IntVec & params = IntVec() )
+	{
+		auto action = actions.get( act );
+		if (!action->eff) action->eff = std::make_shared<And>();
+		auto a = std::dynamic_pointer_cast<And>(action->eff);
+		if ( neg ) a->add( std::make_shared<Not>( ground( pred, params ) ) );
 		else a->add( ground( pred, params ) );
 	}
 
 	// Add a cost to the action with name "act", in the form of an integer
-	void addCost( const std::string & act, int cost ) {
-		Action * action = actions.get( act );
-		if ( action->eff == 0 ) action->eff = new And;
-		And * a = dynamic_cast< And * >( action->eff );
-		a->add( new Increase( cost ) );
+	void addCost( const std::string & act, int cost )
+	{
+		auto action = actions.get( act );
+		if (!action->eff) action->eff = std::make_shared<And>();
+		auto a = std::dynamic_pointer_cast<And>(action->eff);
+		a->add(std::make_shared<Increase>(cost));
 	}
 
 	// Add a cost to the action with name "act", in the form of a function
-	void addCost( const std::string & act, const std::string & func, const IntVec & params = IntVec() ) {
-		Action * action = actions.get( act );
-		if ( action->eff == 0 ) action->eff = new And;
-		And * a = dynamic_cast< And * >( action->eff );
-		a->add( new Increase( funcs.get( func ), params ) );
+	void addCost( const std::string & act, const std::string & func, const IntVec & params = IntVec() )
+	{
+		auto action = actions.get( act );
+		if (!action->eff) action->eff = std::make_shared<And>();
+		auto a = std::dynamic_pointer_cast<And>(action->eff);
+		a->add( std::make_shared<Increase>( funcs.get( func ), params ) );
 	}
 
-	void addFunctionModifier( const std::string & act, FunctionModifier * fm ) {
-		Action * action = actions.get( act );
-		if ( action->eff == 0 ) action->eff = new And;
-		And * a = dynamic_cast< And * >( action->eff );
-		a->add( fm );
+	void addFunctionModifier( const std::string & act, const std::shared_ptr<FunctionModifier>& fm)
+	{
+		auto action = actions.get( act );
+		if (!action->eff) action->eff = std::make_shared<And>();
+		auto a = std::dynamic_pointer_cast<And>(action->eff);
+		a->add(fm);
 	}
 
 	// Create a ground condition with the given name
-	Ground * ground( const std::string & name, const IntVec & params = IntVec() ) {
-		if ( preds.index( name ) < 0 ) {
+	std::shared_ptr<Ground> ground(const std::string& name, const IntVec& params = IntVec())
+	{
+		if ( preds.index( name ) < 0 ) 
+		{
 			std::cout << "Creating a ground condition " << name << params;
 			std::cout << " failed since the predicate " << name << " does not exist!\n";
 			std::exit( 1 );
 		}
-		return new Ground( preds[preds.index( name )], params );
+		return std::make_shared<Ground>( preds[preds.index( name )], params );
 	}
 
 	// Return the list of type names corresponding to a parameter list
 	StringVec typeList( ParamCond * c ) {
 		StringVec out;
-		for ( unsigned i = 0; i < c->params.size(); ++i )
-			out.push_back( types[c->params[i]]->name );
+		for (int param : c->params)
+			out.emplace_back( types[param]->name );
 		return out;
 	}
 
@@ -478,7 +496,7 @@ public:
 	StringVec objectList( Ground * g ) {
 		StringVec out;
 		for ( unsigned i = 0; i < g->params.size(); ++i )
-			out.push_back( types[g->lifted->params[i]]->object( g->params[i] ).first );
+			out.emplace_back( types[g->lifted.lock()->params[i]]->object( g->params[i] ).first );
 		return out;
 	}
 
@@ -489,9 +507,9 @@ public:
 
 	// Assert that one type is a subtype of another
 	bool assertSubtype( int t1, int t2 ) {
-		for ( Type * type = types[t1]; type != 0; type = type->supertype )
-			if ( type->name == types[t2]->name ) return 1;
-		return 0;
+		for ( auto type = types[t1]; type; type = type->supertype.lock() )
+			if ( type->name == types[t2]->name ) return true;
+		return false;
 	}
 
 	// return the index of a constant for a given type
@@ -575,27 +593,28 @@ public:
 
 	virtual std::ostream& print_addtional_blocks(std::ostream& os) const { return os; }
 
-	virtual Condition * createCondition( Filereader & f ) {
+	virtual std::shared_ptr<Condition> createCondition(Filereader& f)
+	{
 		std::string s = f.getToken();
 
-		if ( s == "=" ) return new Equals;
-		if ( s == "AND" ) return new And;
-		if ( s == "EXISTS" ) return new Exists;
-		if ( s == "FORALL" ) return new Forall;
-		if ( s == "INCREASE" ) return new Increase;
-		if ( s == "DECREASE" ) return new Decrease;
-		if ( s == "NOT" ) return new Not;
-		if ( s == "ONEOF" ) return new Oneof;
-		if ( s == "OR" ) return new Or;
-		if ( s == "WHEN" ) return new When;
-		if ( s == ">=" || s == ">" || s == "<=" || s == "<" ) return new CompositeExpression( s );
+		if ( s == "=" ) return std::make_shared<Equals>();
+		if ( s == "AND" ) return std::make_shared<And>();
+		if ( s == "EXISTS" ) return std::make_shared<Exists>();
+		if ( s == "FORALL" ) return std::make_shared<Forall>();
+		if ( s == "INCREASE" ) return std::make_shared<Increase>();
+		if ( s == "DECREASE" ) return std::make_shared<Decrease>();
+		if ( s == "NOT" ) return std::make_shared<Not>();
+		if ( s == "ONEOF" ) return std::make_shared<Oneof>();
+		if ( s == "OR" ) return std::make_shared<Or>();
+		if ( s == "WHEN" ) return std::make_shared<When>();
+		if ( s == ">=" || s == ">" || s == "<=" || s == "<" ) return std::make_shared<CompositeExpression>(s);
 
-		int i = preds.index( s );
-		if ( i >= 0 ) return new Ground( preds[i] );
+		int i = preds.index(s);
+		if (i >= 0) return std::make_shared<Ground>(preds[i]);
 
-		f.tokenExit( s );
+		f.tokenExit(s);
 
-		return 0;
+		return nullptr;
 	}
 };
 
