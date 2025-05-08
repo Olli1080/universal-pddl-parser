@@ -13,10 +13,11 @@ public:
 
 	And() = default;
 
-	And(const And& a, Domain & d )
+	And(const And& a, const Domain& d)
 	{
+		conds.reserve(a.conds.size());
 		for (auto& cond : a.conds)
-			conds.emplace_back(cond->copy( d ) );
+			conds.emplace_back(cond->copy(d));
 	}
 
 	~And() override = default;
@@ -42,7 +43,7 @@ public:
 			cond->addParams( m, n );
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<And>(*this, d);
 	}

@@ -13,7 +13,7 @@ public:
 
 	When() = default;
 
-	When(const When& w, Domain & d )
+	When(const When& w, const Domain& d)
 	{
 		if (w.pars) 
 			pars = w.pars->copy(d);
@@ -34,7 +34,7 @@ public:
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain& d) override;
 
 	void addParams( int m, unsigned n ) override
 	{
@@ -42,7 +42,7 @@ public:
 		cond->addParams( m, n );
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<When>(*this, d);
 	}

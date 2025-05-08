@@ -3,7 +3,8 @@
 
 namespace parser { namespace pddl {
 
-void TypeGround::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const {
+void TypeGround::PDDLPrint(std::ostream& s, unsigned indent, const TokenStruct<std::string>& ts, const Domain& d) const
+{
 	tabindent( s, indent );
 	s << "( " << name;
 	for ( unsigned i = 0; i < params.size(); ++i )
@@ -11,13 +12,15 @@ void TypeGround::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct
 	s << " )";
 }
 
-void TypeGround::insert( Domain & d, const StringVec & v ) {
+void TypeGround::insert(Domain& d, const StringVec& v)
+{
 	params.resize( lifted.lock()->params.size() );
-	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i ) {
-		std::pair< bool, unsigned > p = d.types[lifted.lock()->params[i]]->parseObject( v[i] );
-		if ( p.first ) params[i] = p.second;
+	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i ) 
+	{
+		auto p = d.types[lifted.lock()->params[i]]->parseObject( v[i] );
+		if ( p.first ) params[i] = static_cast<int>(p.second);
 		else {
-			std::pair< bool, int > q = d.types[lifted.lock()->params[i]]->parseConstant( v[i] );
+			auto q = d.types[lifted.lock()->params[i]]->parseConstant( v[i] );
 			if ( q.first ) params[i] = q.second;
 			else {
 				std::cerr << "Unknown object " << v[i] << "\n";
@@ -32,8 +35,8 @@ void TypeGround::parse( Filereader & f, TokenStruct< std::string > & ts, Domain 
 	params.resize( lifted.lock()->params.size() );
 	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i, f.next() ) {
 		std::string s = f.getToken();
-		std::pair< bool, unsigned > p = d.types[lifted.lock()->params[i]]->parseObject( s );
-		if ( p.first ) params[i] = p.second;
+		auto p = d.types[lifted.lock()->params[i]]->parseObject( s );
+		if ( p.first ) params[i] = static_cast<int>(p.second);
 		else {
 			std::pair< bool, int > q = d.types[lifted.lock()->params[i]]->parseConstant( s );
 			if ( q.first ) params[i] = q.second;

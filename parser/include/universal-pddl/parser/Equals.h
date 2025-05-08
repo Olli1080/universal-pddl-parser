@@ -19,7 +19,7 @@ public:
 
 	void parse(Filereader& f, TokenStruct<std::string>& ts, Domain& d) override;
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Equals>(*this);
 	}

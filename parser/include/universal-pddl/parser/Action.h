@@ -17,7 +17,7 @@ public:
 	Action(ParamCond& c)
 		: ParamCond(c) {}
 
-	Action(const Action& a, Domain& d)
+	Action(const Action& a, const Domain& d)
 		: ParamCond(a)
 	{
 		if (a.pre) 
@@ -55,9 +55,9 @@ public:
 		params.insert(params.end(), v.begin(), v.end());
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
-		return std::make_shared<Action>( *this, d );
+		return std::make_shared<Action>(*this, d);
 	}
 
 	std::vector<std::shared_ptr<Condition>> precons();

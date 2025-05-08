@@ -17,7 +17,7 @@ public:
 	Derived(const std::string& s)
 		: Lifted(s) {}
 
-	Derived(const Derived& z, Domain& d);
+	Derived(const Derived& z, const Domain& d);
 
 	void print( std::ostream & stream ) const override
 	{
@@ -28,7 +28,7 @@ public:
 
 	void PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const override;
 
-	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d );
+	void parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) override;
 
 	void addParams( int m, unsigned n ) override
 	{
@@ -36,7 +36,7 @@ public:
 			if (param >= m ) param += n;
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Derived>(*this, d);
 	}

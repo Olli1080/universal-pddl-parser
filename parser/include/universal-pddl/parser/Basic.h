@@ -8,17 +8,14 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <numbers>
 #include <set>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#define MIN( a, b ) ( ( a ) < ( b ) ? ( a ) : ( b ) )
-#define MAX( a, b ) ( ( a ) < ( b ) ? ( b ) : ( a ) )
-#define SQR( a )    ( ( a ) * ( a ) )
-
-#define PI 3.1415926535897932384
+constexpr auto PI = std::numbers::pi;
 
 typedef std::set< int > IntSet;
 typedef std::vector< int > IntVec;
@@ -28,15 +25,19 @@ typedef std::pair< int, int > IntPair;
 typedef std::vector< IntPair > PairVec;
 typedef std::map< int, IntSet > SetMap;
 typedef std::vector< double > DoubleVec;
-typedef std::vector< unsigned > UnsignedVec;
+typedef std::vector< size_t > UnsignedVec;
 typedef std::vector< std::string > StringVec;
 typedef std::pair< double, double > DoublePair;
 
 // create a vector of integers from lo to (hi-1)
-inline IntVec incvec( unsigned lo, unsigned hi ) {
+template<typename T0, typename T1>
+inline IntVec incvec(T0 lo, T1 hi)
+{
+	using T = std::common_type<T0, T1>;
 	IntVec out;
-	for ( unsigned i = lo; i < hi; ++i )
-		out.push_back( i );
+	out.reserve(hi - lo);
+	for (T i = lo; i < hi; ++i)
+		out.emplace_back(static_cast<int>(i));
 	return out;
 }
 

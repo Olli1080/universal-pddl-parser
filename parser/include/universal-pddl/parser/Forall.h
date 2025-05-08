@@ -12,7 +12,7 @@ public:
 
 	Forall() = default;
 
-	Forall(const Forall& f, Domain& d)
+	Forall(const Forall& f, const Domain& d)
 		: ParamCond( f )
 	{
 		if (f.cond) cond = f.cond->copy(d);
@@ -35,7 +35,7 @@ public:
 		cond->addParams(m, n);
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Forall>(*this, d);
 	}

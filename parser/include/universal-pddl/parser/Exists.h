@@ -13,7 +13,7 @@ public:
 
 	Exists() = default;
 
-	Exists(const Exists& e, Domain & d )
+	Exists(const Exists& e, const Domain& d)
 		: ParamCond( e )
 	{
 		if (e.cond) cond = e.cond->copy(d);
@@ -36,7 +36,7 @@ public:
 		cond->addParams( m, n );
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Exists>(*this, d);
 	}

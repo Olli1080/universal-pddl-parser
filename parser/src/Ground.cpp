@@ -3,24 +3,28 @@
 
 namespace parser { namespace pddl {
 
-Ground::Ground(const Ground& g, Domain& d)
+Ground::Ground(const Ground& g, const Domain& d)
 	: ParamCond( g ), lifted(d.preds.get(g.name)) {}
 
-void Ground::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const {
+void Ground::PDDLPrint( std::ostream & s, unsigned indent, const TokenStruct< std::string > & ts, const Domain & d ) const
+{
 	tabindent( s, indent );
 	s << "( " << name;
-	for ( unsigned i = 0; i < params.size(); ++i ) {
-		if ( ts.size() && params[i] >= 0 && (unsigned)params[i] < ts.size() ) s << " " << ts[params[i]];
+	for ( unsigned i = 0; i < params.size(); ++i ) 
+	{
+		if (!ts.empty() && params[i] >= 0 && (unsigned)params[i] < ts.size() ) s << " " << ts[params[i]];
 		else if (params[i] >= 0 && (unsigned)params[i] >= ts.size()) s << " ?" << params[i]; 
 		else s << " " << d.types[lifted.lock()->params[i]]->object( params[i] ).first;
 	}
 	s << " )";
 }
 
-void Ground::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d ) {
+void Ground::parse( Filereader & f, TokenStruct< std::string > & ts, Domain & d )
+{
 	f.next();
 	params.resize( lifted.lock()->params.size() );
-	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i, f.next() ) {
+	for ( unsigned i = 0; i < lifted.lock()->params.size(); ++i, f.next() ) 
+	{
 		std::string s = f.getToken();
 		int k = ts.index( s );
 		if ( k >= 0 ) params[i] = k;

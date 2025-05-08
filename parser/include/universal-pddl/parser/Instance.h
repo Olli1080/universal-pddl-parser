@@ -60,17 +60,19 @@ public:
 	{
 		TokenStruct<std::string> ts = f.parseTypedList(true, d.types);
 
-		for ( unsigned i = 0; i < ts.size(); ++i ) {
+		for (size_t i = 0; i < ts.size(); ++i) 
+		{
 			auto type = d.getType( ts.types[i] );
-			std::pair< bool, unsigned > pair = type->parseObject( ts[i] );
+			auto pair = type->parseObject( ts[i] );
 			if ( pair.first == false )
 				type->objects.insert( ts[i] );
 		}
 
-		for ( unsigned i = 0; DOMAIN_DEBUG && i < d.types.size(); ++i ) {
+		for (size_t i = 0; DOMAIN_DEBUG && i < d.types.size(); ++i)
+		{
 			std::cout << " ";
 			if ( d.typed ) std::cout << " " << d.types[i] << ":";
-			for ( unsigned j = 0; j < d.types[i]->objects.size(); ++j )
+			for (size_t j = 0; j < d.types[i]->objects.size(); ++j)
 				std::cout << " " << d.types[i]->objects[j];
 			std::cout << "\n";
 		}

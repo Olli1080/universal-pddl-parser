@@ -16,7 +16,7 @@ public:
 	Not(const std::shared_ptr<Ground>& g)
 		: cond(g) {}
 
-	Not(const Not& n, Domain& d)
+	Not(const Not& n, const Domain& d)
 	{
 		if (n.cond) cond = std::static_pointer_cast<Ground>(n.cond->copy(d));
 	}
@@ -38,7 +38,7 @@ public:
 		cond->addParams(m, n);
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Not>(*this, d);
 	}

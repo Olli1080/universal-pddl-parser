@@ -23,7 +23,7 @@ public:
 
 	void addParams(int m, unsigned n) override {}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Task>(*this);
 	}

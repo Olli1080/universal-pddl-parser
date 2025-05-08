@@ -201,7 +201,7 @@ public:
 	}
 
 	void parseConstants( Filereader & f ) {
-		if ( typed && !types.size() ) {
+		if ( typed && types.empty()) {
 			std::cout << "Types needed before defining constants\n";
 			exit( 1 );
 		}
@@ -216,15 +216,15 @@ public:
 		for ( unsigned i = 0; DOMAIN_DEBUG && i < types.size(); ++i ) {
 			std::cout << " ";
 			if ( typed ) std::cout << " " << types[i] << ":";
-			for ( unsigned j = 0; j < types[i]->constants.size(); ++j )
-				std::cout << " " << types[i]->constants[j];
+			for (const auto& constant : types[i]->constants)
+				std::cout << " " << constant;
 			std::cout << "\n";
 		}
 	}
 
 	void parsePredicates(Filereader& f)
 	{
-		if (typed && !types.size()) 
+		if (typed && types.empty()) 
 		{
 			std::cout << "Types needed before defining predicates\n";
 			exit(1);
@@ -255,7 +255,7 @@ public:
 
 	void parseFunctions(Filereader& f)
 	{
-		if ( typed && !types.size() ) {
+		if ( typed && types.empty()) {
 			std::cout << "Types needed before defining functions\n";
 			exit(1);
 		}
@@ -272,7 +272,7 @@ public:
 	}
 
 	virtual void parseAction( Filereader & f ) {
-		if ( !preds.size() ) {
+		if (preds.empty()) {
 			std::cout << "Predicates needed before defining actions\n";
 			exit(1);
 		}
@@ -287,7 +287,7 @@ public:
 
 	void parseDerived( Filereader & f )
 	{
-		if ( !preds.size() ) 
+		if (preds.empty()) 
 		{
 			std::cout << "Predicates needed before defining derived predicates\n";
 			exit(1);
@@ -303,7 +303,7 @@ public:
 
 	void parseDurativeAction( Filereader & f )
 	{
-		if ( !preds.size() ) 
+		if (preds.empty()) 
 		{
 			std::cout << "Predicates needed before defining actions\n";
 			exit(1);
@@ -323,8 +323,8 @@ public:
 	TokenStruct<std::shared_ptr<Type>> copyTypes()
 	{
 		TokenStruct<std::shared_ptr<Type>> out;
-		for ( unsigned i = 0; i < types.size(); ++i )
-			out.insert( types[i]->copy() );
+		for (const auto& type : types)
+			out.insert(type->copy() );
 
 		for ( unsigned i = 1; i < types.size(); ++i ) {
 			if (auto lock = types[i]->supertype.lock(); lock)
@@ -485,86 +485,98 @@ public:
 	}
 
 	// Return the list of type names corresponding to a parameter list
-	StringVec typeList( ParamCond * c ) {
+	[[nodiscard]] StringVec typeList(const ParamCond& c) const
+	{
 		StringVec out;
-		for (int param : c->params)
+		for (int param : c.params)
 			out.emplace_back( types[param]->name );
 		return out;
 	}
 
 	// Return the list of object names corresponding to a ground fluent
-	StringVec objectList( Ground * g ) {
+	[[nodiscard]] StringVec objectList(const Ground& g) const
+	{
 		StringVec out;
-		for ( unsigned i = 0; i < g->params.size(); ++i )
-			out.emplace_back( types[g->lifted.lock()->params[i]]->object( g->params[i] ).first );
+		for ( unsigned i = 0; i < g.params.size(); ++i )
+			out.emplace_back( types[g.lifted.lock()->params[i]]->object( g.params[i] ).first );
 		return out;
 	}
 
 	// Add parameters to an action
-	void addParams( const std::string & name, const StringVec & v ) {
-		actions.get( name )->addParams( convertTypes( v ) );
+	void addParams(const std::string& name, const StringVec& v)
+	{
+		actions.get(name)->addParams( convertTypes(v));
 	}
 
 	// Assert that one type is a subtype of another
-	bool assertSubtype( int t1, int t2 ) {
-		for ( auto type = types[t1]; type; type = type->supertype.lock() )
-			if ( type->name == types[t2]->name ) return true;
+	bool assertSubtype(int t1, int t2)
+	{
+		for (auto type = types[t1]; type; type = type->supertype.lock())
+			if (type->name == types[t2]->name) return true;
 		return false;
 	}
 
 	// return the index of a constant for a given type
-	int constantIndex( const std::string & name, const std::string & type ) {
-		return types.get( type )->parseConstant( name ).second;
+	[[nodiscard]] int constantIndex(const std::string& name, const std::string& type) const
+	{
+		return types.get(type)->parseConstant(name).second;
 	}
 
 	//! Prints a PDDL representation of the object to the given stream.
 	friend std::ostream& operator<<(std::ostream &os, const Domain& o) { return o.print(os); }
-	virtual std::ostream& print(std::ostream& os) const {
+	virtual std::ostream& print(std::ostream& os) const
+	{
 		os << "( DEFINE ( DOMAIN " << name << " )\n";
 		print_requirements(os);
 
-		if ( typed ) {
+		if ( typed ) 
+		{
 			os << "( :TYPES\n";
 			for ( unsigned i = 1; i < types.size(); ++i )
 				types[i]->PDDLPrint( os );
 			os << ")\n";
 		}
 
-		if ( cons ) {
+		if ( cons ) 
+		{
 			os << "( :CONSTANTS\n";
-			for ( unsigned i = 0; i < types.size(); ++i )
-				if ( types[i]->constants.size() ) {
+			for (const auto& type : types)
+			{
+				if (!type->constants.empty()) {
 					os << "\t";
-					for ( unsigned j = 0; j < types[i]->constants.size(); ++j )
-						os << types[i]->constants[j] << " ";
-					if ( typed )
-						os << "- " << types[i]->name;
+					for (const auto& constant : type->constants)
+						os << constant << " ";
+					if (typed)
+						os << "- " << type->name;
 					os << "\n";
 				}
+			}
 			os << ")\n";
 		}
 
 		os << "( :PREDICATES\n";
-		for ( unsigned i = 0; i < preds.size(); ++i ) {
-			preds[i]->PDDLPrint( os, 1, TokenStruct< std::string >(), *this );
+		for (const auto& pred : preds)
+		{
+			pred->PDDLPrint( os, 1, TokenStruct< std::string >(), *this );
 			os << "\n";
 		}
 		os << ")\n";
 
-		if ( funcs.size() ) {
+		if (!funcs.empty()) {
 			os << "( :FUNCTIONS\n";
-			for ( unsigned i = 0; i < funcs.size(); ++i ) {
-				funcs[i]->PDDLPrint( os, 1, TokenStruct< std::string >(), *this );
+			for (const auto& func : funcs)
+			{
+				func->PDDLPrint( os, 1, TokenStruct< std::string >(), *this );
 				os << "\n";
 			}
 			os << ")\n";
 		}
 
-		for ( unsigned i = 0; i < actions.size(); ++i )
-			actions[i]->PDDLPrint( os, 0, TokenStruct< std::string >(), *this );
+		for (const auto& action : actions)
+			action->PDDLPrint( os, 0, TokenStruct< std::string >(), *this );
 
-		for ( unsigned i = 0; i < derived.size(); ++i )
-			derived[i]->PDDLPrint( os, 0, TokenStruct< std::string >(), *this );
+		for (const auto& i : derived)
+			i->PDDLPrint( os, 0, TokenStruct< std::string >(), *this );
 
 		print_addtional_blocks(os);
 

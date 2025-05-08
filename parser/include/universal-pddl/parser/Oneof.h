@@ -13,8 +13,9 @@ public:
 
 	Oneof() = default;
 
-	Oneof(const Oneof& o, Domain& d)
+	Oneof(const Oneof& o, const Domain& d)
 	{
+		conds.reserve(o.conds.size());
 		for (const auto& cond : o.conds)
 			conds.emplace_back(cond->copy(d));
 	}
@@ -42,7 +43,7 @@ public:
 			cond->addParams(m, n);
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Oneof>(*this, d);
 	}

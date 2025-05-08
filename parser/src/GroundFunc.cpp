@@ -38,8 +38,8 @@ void GroundFunc<int>::parse( Filereader & f, TokenStruct< std::string > & ts, Do
 	
 	f.next();
 	std::string s = f.getToken();
-	std::pair< bool, unsigned > p = d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->parseObject( s );
-	if ( p.first ) value = p.second;
+	auto p = d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->parseObject( s );
+	if ( p.first ) value = static_cast<int>(p.second);
 	else {
 		std::pair< bool, int > q = d.types[std::static_pointer_cast<Function>(lifted.lock())->returnType]->parseConstant( s );
 		if ( q.first ) value = q.second;

@@ -21,7 +21,7 @@ public:
 
 	virtual void addParams( int m, unsigned n ) = 0;
 
-	virtual std::shared_ptr<Condition> copy(Domain& d) = 0;
+	[[nodiscard]] virtual std::shared_ptr<Condition> copy(const Domain& d) const = 0;
 };
 
 inline std::ostream & operator<<( std::ostream & stream, const Condition& c )
@@ -30,6 +30,6 @@ inline std::ostream & operator<<( std::ostream & stream, const Condition& c )
 	return stream;
 }
 
-typedef std::vector<Condition*> CondVec;
+typedef std::vector<std::shared_ptr<Condition>> CondVec;
 
 } } // namespaces

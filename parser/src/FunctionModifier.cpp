@@ -9,7 +9,7 @@ FunctionModifier::FunctionModifier(std::string name, int val)
 FunctionModifier::FunctionModifier(std::string name, const std::shared_ptr<Function>& f, const IntVec& p)
 	: name(std::move(name)), modifierExpr(std::make_shared<FunctionExpression>(std::make_shared<Ground>(f, p))) {}
 
-FunctionModifier::FunctionModifier(std::string name, const FunctionModifier& i, Domain& d)
+FunctionModifier::FunctionModifier(std::string name, const FunctionModifier& i, const Domain& d)
 	: name(std::move(name))
 {
 	if (i.modifiedGround) 

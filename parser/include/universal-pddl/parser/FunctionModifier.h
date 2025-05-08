@@ -22,7 +22,7 @@ public:
 
 	FunctionModifier(std::string name, const std::shared_ptr<Function>& f, const IntVec& p = IntVec());
 
-	FunctionModifier(std::string name, const FunctionModifier& i, Domain& d);
+	FunctionModifier(std::string name, const FunctionModifier& i, const Domain& d);
 
 	~FunctionModifier() override = default;
 
@@ -50,10 +50,10 @@ public:
 	Decrease(const std::shared_ptr<Function>& f, const IntVec& p = IntVec())
 		: FunctionModifier("DECREASE", f, p) {}
 
-	Decrease(const FunctionModifier& i, Domain& d)
+	Decrease(const FunctionModifier& i, const Domain& d)
 		: FunctionModifier("DECREASE", i, d) {}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Decrease>(*this, d);
 	}
@@ -67,9 +67,9 @@ public:
 
 	Increase(const std::shared_ptr<Function>& f, const IntVec & p = IntVec() ) : FunctionModifier( "INCREASE", f, p ) { }
 
-	Increase( const FunctionModifier& i, Domain & d ) : FunctionModifier( "INCREASE", i, d ) { }
+	Increase(const FunctionModifier& i, const Domain& d) : FunctionModifier( "INCREASE", i, d ) { }
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Increase>(*this, d);
 	}

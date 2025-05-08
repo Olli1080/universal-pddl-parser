@@ -99,7 +99,7 @@ public:
 		return lpars;
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		auto cleft = std::dynamic_pointer_cast<Expression>(left->copy(d));
 		auto cright = std::dynamic_pointer_cast<Expression>(right->copy(d));
@@ -135,7 +135,7 @@ public:
 		return {fun->params.begin(), fun->params.end()};
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		auto pc = std::dynamic_pointer_cast<ParamCond>(fun->copy(d));
 		return std::make_shared<FunctionExpression>(pc);
@@ -174,7 +174,7 @@ public:
 		return {};
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<ValueExpression>(value);
 	}
@@ -206,7 +206,7 @@ class DurationExpression : public Expression
 		return {};
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<DurationExpression>();
 	}

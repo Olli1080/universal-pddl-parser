@@ -40,7 +40,7 @@ public:
 		t->supertype = this->shared_from_this();
 	}*/
 
-	void copySubtypes(Type& t, const TokenStruct<std::shared_ptr<Type>>& ts)
+	void copySubtypes(const Type& t, const TokenStruct<std::shared_ptr<Type>>& ts)
 	{
 		for (auto& subtype : t.subtypes)
 			subtypes.emplace_back(ts.get(subtype.lock()->name));
@@ -80,9 +80,9 @@ public:
 		return std::make_pair( false, k );
 	}
 
-	std::pair<bool, unsigned> parseObject(const std::string& object)
+	[[nodiscard]] std::pair<bool, size_t> parseObject(const std::string& object) const
 	{
-		unsigned k = 0;
+		size_t k = 0;
 
 		int i = objects.index( object );
 		if (i < 0) k += objects.size();
@@ -90,7 +90,7 @@ public:
 
 		for (auto& subtype : subtypes)
 		{
-			std::pair<bool, unsigned> p = subtype.lock()->parseObject( object );
+			auto p = subtype.lock()->parseObject( object );
 			if ( p.first ) return std::make_pair( true, k + p.second );
 			else k += p.second;
 		}
@@ -98,13 +98,15 @@ public:
 		return std::make_pair( false, k );
 	}
 
-	std::pair<std::string, int> object(int index)
+	[[nodiscard]] std::pair<std::string, int> object(int index) const
 	{
-		if ( index < 0 ) {
+		if ( index < 0 ) 
+		{
 			if ( -index <= (int)constants.size() ) return std::make_pair( constants[-1 - index], 0 );
 			else index += constants.size();
 		}
-		else {
+		else 
+		{
 			if ( index < (int)objects.size() ) return std::make_pair( objects[index], 0 );
 			else index -= objects.size();
 		}
@@ -119,17 +121,17 @@ public:
 		return std::make_pair( "", index );
 	}
 
-	unsigned noObjects() const
+	[[nodiscard]] size_t noObjects() const
 	{
-		unsigned total = objects.size() + constants.size();
+		size_t total = objects.size() + constants.size();
 		for (auto& subtype : subtypes)
 			total += subtype.lock()->noObjects();
 		return total;
 	}
 
-	unsigned noConstants() const
+	[[nodiscard]] size_t noConstants() const
 	{
-		unsigned total = constants.size();
+		size_t total = constants.size();
 		for (auto& subtype : subtypes)
 			total += subtype.lock()->noConstants();
 		return total;

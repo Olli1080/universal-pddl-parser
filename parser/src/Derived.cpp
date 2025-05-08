@@ -3,7 +3,7 @@
 
 namespace parser { namespace pddl {
 
-Derived::Derived(const Derived& z, Domain& d )
+Derived::Derived(const Derived& z, const Domain& d )
 	: Lifted( z ), lifted( d.preds.get( z.name ) ) {
 	if (z.cond) cond = z.cond->copy(d);
 }

@@ -45,7 +45,6 @@ target_sources(${PROJECT_NAME}
     ${INCLUDE_DIR}/Action.h
     ${INCLUDE_DIR}/And.h
     ${INCLUDE_DIR}/Basic.h
-    ${INCLUDE_DIR}/CondIter.h
     ${INCLUDE_DIR}/Condition.h
     ${INCLUDE_DIR}/Derived.h
     ${INCLUDE_DIR}/Domain.h

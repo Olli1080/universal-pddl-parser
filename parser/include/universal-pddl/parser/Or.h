@@ -12,7 +12,7 @@ public:
 
 	Or() = default;
 
-	Or(const Or& o, Domain& d)
+	Or(const Or& o, const Domain& d)
 	{
 		if (o.first) first = o.first->copy(d);
 		if (o.second) second = o.second->copy(d);
@@ -37,7 +37,7 @@ public:
 		second->addParams(m, n);
 	}
 
-	std::shared_ptr<Condition> copy(Domain& d) override
+	[[nodiscard]] std::shared_ptr<Condition> copy(const Domain& d) const override
 	{
 		return std::make_shared<Or>(*this, d);
 	}
