@@ -183,8 +183,8 @@ public:
 		{
 			if (!ts.types[i].empty())
 			{
-				auto t1 = getType(ts.types[i]);
 				auto type = getType(ts[i]);
+				auto t1 = getType(ts.types[i]);
 				connect_types(t1, type);
 				//t1->insertSubtype(type);
 			}
@@ -320,7 +320,7 @@ public:
 
 	// Return a copy of the type structure, with newly allocated types
 	// This will also copy all constants and objects!
-	TokenStruct<std::shared_ptr<Type>> copyTypes()
+	[[nodiscard]] TokenStruct<std::shared_ptr<Type>> copyTypes() const
 	{
 		TokenStruct<std::shared_ptr<Type>> out;
 		for (const auto& type : types)

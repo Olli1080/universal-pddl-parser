@@ -33,11 +33,10 @@ typedef std::pair< double, double > DoublePair;
 template<typename T0, typename T1>
 inline IntVec incvec(T0 lo, T1 hi)
 {
-	using T = std::common_type<T0, T1>;
 	IntVec out;
 	out.reserve(hi - lo);
-	for (T i = lo; i < hi; ++i)
-		out.emplace_back(static_cast<int>(i));
+	for (int i = static_cast<int>(lo); i < static_cast<int>(hi); ++i)
+		out.emplace_back(i);
 	return out;
 }
 
